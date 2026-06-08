@@ -1,0 +1,1 @@
+CREATE DATABASE oto_test OWNER oto;
