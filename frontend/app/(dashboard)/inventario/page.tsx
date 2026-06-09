@@ -142,7 +142,7 @@ export default function InventarioPage() {
                 <TableHead>Categoria</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Última atualização</TableHead>
-                <TableHead className="w-[120px]" />
+                <TableHead className="w-[160px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -183,7 +183,7 @@ export default function InventarioPage() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">
+                        <Badge className="bg-[#E8F4F8] text-[#2E86AB] border-transparent hover:bg-[#E8F4F8]">
                           {CAT_SHORT[
                             categorias.find((c) => c.id === emp.categoria_id)
                               ?.slug ?? ""
@@ -215,14 +215,24 @@ export default function InventarioPage() {
                           : new Date(emp.criado_em).toLocaleDateString("pt-BR")}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          render={<Link href={`/inventario/${emp.id}`} />}
-                          nativeButton={false}
-                        >
-                          Ver
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            render={<Link href={`/inventario/${emp.id}`} />}
+                            nativeButton={false}
+                          >
+                            Ver
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            render={<Link href={`/inventario/${emp.id}/editar`} />}
+                            nativeButton={false}
+                          >
+                            Editar
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

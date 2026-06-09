@@ -75,15 +75,15 @@
   --chart-4: oklch(0.75 0.15 68);
   --chart-5: oklch(0.57 0.20 27);
   --radius: 0.5rem;
-  /* OTO sidebar uses primary blue */
-  --sidebar: oklch(0.37 0.12 254);
-  --sidebar-foreground: oklch(0.97 0 0);
-  --sidebar-primary: oklch(0.985 0 0);
-  --sidebar-primary-foreground: oklch(0.37 0.12 254);
-  --sidebar-accent: oklch(0.30 0.10 254);
-  --sidebar-accent-foreground: oklch(0.97 0 0);
-  --sidebar-border: oklch(0.30 0.10 254);
-  --sidebar-ring: oklch(0.54 0.10 210);
+  /* OTO sidebar: white background, blue active/hover */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.46 0 0);
+  --sidebar-primary: oklch(0.37 0.12 254);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.94 0.03 254);
+  --sidebar-accent-foreground: oklch(0.37 0.12 254);
+  --sidebar-border: oklch(0.92 0 0);
+  --sidebar-ring: oklch(0.37 0.12 254);
   /* Status semantic colors */
   --success: oklch(0.63 0.15 152);
   --warning: oklch(0.75 0.15 68);

@@ -180,10 +180,11 @@ export default function EmpresaDetailPage() {
               <div className="flex items-center gap-2 mb-2">
                 <h1 className="text-xl font-bold">{empresa.nome_fantasia}</h1>
                 <Badge
+                  variant="secondary"
                   className={
                     empresa.status === "ativo"
-                      ? "bg-[--success]/15 text-[--success] border-transparent"
-                      : "text-muted-foreground"
+                      ? "bg-[--success]/15 text-[--success] border-transparent hover:bg-[--success]/20"
+                      : "bg-muted text-muted-foreground border-transparent"
                   }
                 >
                   {empresa.status === "ativo" ? "● Ativo" : "● Inativo"}
