@@ -67,7 +67,7 @@ Sprint mapping follows `CLAUDE.md` §9. This file is updated as each sprint land
 
 | ID | História | Prioridade | Status | Notes |
 |---|---|---|---|---|
-| 5.1 | Acesso via browser, sem instalação | Obrigatório | not started | Next.js web app |
+| 5.1 | Acesso via browser, sem instalação | Obrigatório | **done** | Next.js 16 + shadcn frontend — builds cleanly, routes /login /inventario /inventario/[id] /inventario/novo |
 | 5.2 | Formulário otimizado para toque em tablet | Obrigatório | not started | Sprint 3 |
 | 5.4 | Backup automático diário, rollback de 30 dias | Obrigatório | not started | infra-level — TBD with TI da Prefeitura |
 | 5.5 | Criar novos tipos de pesquisa sem developer | Obrigatório | not started | config-driven `formulario_versao.schema_json` |
