@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.audit import record_audit
 from app.models.inventario import AuditLog, CategoriaEmpresa, Empresa
+from app.models.usuario import Usuario
 from app.schemas.inventario import EmpresaCreate, EmpresaUpdate
 
 
@@ -45,18 +46,47 @@ def create_empresa(db: Session, data: EmpresaCreate, usuario_id: uuid.UUID) -> E
     return empresa
 
 
+def _normalize_for_diff(value):
+    """Treat None, "", {} and [] as equivalent "empty" values for audit diffing."""
+    if value in ("", {}, []):
+        return None
+    return value
+
+
 def update_empresa(db: Session, empresa: Empresa, data: EmpresaUpdate, usuario_id: uuid.UUID) -> Empresa:
     updates = {k: v for k, v in data.model_dump(exclude_unset=True).items()}
     for field, new_value in updates.items():
         old_value = getattr(empresa, field)
-        if old_value != new_value:
-            record_audit(
-                db, "empresa", empresa.id, usuario_id, "UPDATE",
-                campo_alterado=field,
-                valor_anterior=old_value,
-                valor_novo=new_value,
-            )
-            setattr(empresa, field, new_value)
+
+        if field == "campos_extras":
+            old_extras = old_value or {}
+            new_extras = new_value or {}
+            changed = False
+            for key in set(old_extras) | set(new_extras):
+                old_v = old_extras.get(key)
+                new_v = new_extras.get(key)
+                if _normalize_for_diff(old_v) == _normalize_for_diff(new_v):
+                    continue
+                changed = True
+                record_audit(
+                    db, "empresa", empresa.id, usuario_id, "UPDATE",
+                    campo_alterado=key,
+                    valor_anterior=old_v,
+                    valor_novo=new_v,
+                )
+            if changed:
+                setattr(empresa, field, new_value)
+            continue
+
+        if _normalize_for_diff(old_value) == _normalize_for_diff(new_value):
+            continue
+        record_audit(
+            db, "empresa", empresa.id, usuario_id, "UPDATE",
+            campo_alterado=field,
+            valor_anterior=old_value,
+            valor_novo=new_value,
+        )
+        setattr(empresa, field, new_value)
 
     empresa.atualizado_em = datetime.utcnow()
     db.commit()
@@ -79,9 +109,15 @@ def soft_delete_empresa(db: Session, empresa: Empresa, usuario_id: uuid.UUID) ->
 
 
 def get_audit_log(db: Session, empresa_id: uuid.UUID) -> list[AuditLog]:
-    return (
-        db.query(AuditLog)
+    rows = (
+        db.query(AuditLog, Usuario.nome)
+        .outerjoin(Usuario, AuditLog.usuario_id == Usuario.id)
         .filter(AuditLog.tabela == "empresa", AuditLog.registro_id == empresa_id)
-        .order_by(AuditLog.criado_em)
+        .order_by(AuditLog.criado_em.desc(), AuditLog.id.desc())
         .all()
     )
+    logs = []
+    for log, usuario_nome in rows:
+        log.usuario_nome = usuario_nome
+        logs.append(log)
+    return logs

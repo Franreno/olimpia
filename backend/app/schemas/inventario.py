@@ -75,6 +75,7 @@ class AuditLogOut(BaseModel):
     tabela: str
     registro_id: uuid.UUID
     usuario_id: uuid.UUID | None
+    usuario_nome: str | None = None
     operacao: str
     campo_alterado: str | None
     valor_anterior: Any

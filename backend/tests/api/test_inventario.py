@@ -185,6 +185,69 @@ class TestUpdateEmpresa:
         assert log.valor_anterior == "Nome Velho"
         assert log.valor_novo == "Nome Novo"
 
+    def test_update_does_not_log_unset_optional_fields(self, client, db_session, categoria):
+        _make_usuario(db_session, "editor7b@example.com", "editor")
+        token = _login(client, "editor7b@example.com")
+        created = client.post(
+            "/api/v1/empresas",
+            json={"categoria_id": categoria.id, "nome_fantasia": "Pousada Velha", "campos_extras": {}},
+            headers=_auth(token),
+        ).json()
+
+        r = client.put(
+            f"/api/v1/empresas/{created['id']}",
+            json={
+                "nome_fantasia": "Pousada Nova",
+                "razao_social": "",
+                "cnpj": "",
+                "endereco": "",
+                "campos_extras": {},
+            },
+            headers=_auth(token),
+        )
+        assert r.status_code == 200
+
+        from app.models.inventario import AuditLog
+        logs = db_session.query(AuditLog).filter_by(
+            tabela="empresa", registro_id=created["id"], operacao="UPDATE"
+        ).all()
+        campos = {log.campo_alterado for log in logs}
+        assert campos == {"nome_fantasia"}
+
+    def test_update_campos_extras_logs_per_key_changes(self, client, db_session, categoria):
+        _make_usuario(db_session, "editor7c@example.com", "editor")
+        token = _login(client, "editor7c@example.com")
+        created = client.post(
+            "/api/v1/empresas",
+            json={
+                "categoria_id": categoria.id,
+                "nome_fantasia": "Hotel Extras",
+                "campos_extras": {"uhs": 10, "leitos": 20, "tipo": "pousada"},
+            },
+            headers=_auth(token),
+        ).json()
+
+        r = client.put(
+            f"/api/v1/empresas/{created['id']}",
+            json={"campos_extras": {"uhs": 12, "leitos": 20, "tipo": "hotel"}},
+            headers=_auth(token),
+        )
+        assert r.status_code == 200
+        assert r.json()["campos_extras"] == {"uhs": 12, "leitos": 20, "tipo": "hotel"}
+
+        from app.models.inventario import AuditLog
+        logs = db_session.query(AuditLog).filter_by(
+            tabela="empresa", registro_id=created["id"], operacao="UPDATE"
+        ).all()
+        by_field = {log.campo_alterado: log for log in logs}
+
+        assert "campos_extras" not in by_field
+        assert by_field["uhs"].valor_anterior == 10
+        assert by_field["uhs"].valor_novo == 12
+        assert by_field["tipo"].valor_anterior == "pousada"
+        assert by_field["tipo"].valor_novo == "hotel"
+        assert "leitos" not in by_field
+
     def test_pesquisador_cannot_update(self, client, db_session, categoria):
         _make_usuario(db_session, "editor8@example.com", "editor")
         _make_usuario(db_session, "pesq2@example.com", "pesquisador")
@@ -282,6 +345,29 @@ class TestAuditLog:
         operacoes = {e["operacao"] for e in logs}
         assert "INSERT" in operacoes
         assert "UPDATE" in operacoes
+
+    def test_audit_history_includes_usuario_nome_and_is_newest_first(self, client, db_session, categoria):
+        usuario = _make_usuario(db_session, "editor13@example.com", "editor")
+        token = _login(client, "editor13@example.com")
+        created = client.post(
+            "/api/v1/empresas",
+            json={"categoria_id": categoria.id, "nome_fantasia": "Cronológica", "campos_extras": {}},
+            headers=_auth(token),
+        ).json()
+        client.put(
+            f"/api/v1/empresas/{created['id']}",
+            json={"nome_fantasia": "Cronológica v2"},
+            headers=_auth(token),
+        )
+
+        r = client.get(f"/api/v1/empresas/{created['id']}/audit", headers=_auth(token))
+
+        assert r.status_code == 200
+        logs = r.json()
+        assert all(e["usuario_nome"] == usuario.nome for e in logs)
+        # newest first: the UPDATE (last action) should come before the INSERT
+        assert logs[0]["operacao"] == "UPDATE"
+        assert logs[-1]["operacao"] == "INSERT"
 
 
 # ── GET /api/v1/categorias ───────────────────────────────────────────────────
