@@ -315,18 +315,6 @@ export default function EmpresaDetailPage() {
               </Card>
             ))}
           </div>
-          <Card>
-            <CardContent className="pt-5">
-              <div className="flex gap-2 p-3 bg-primary/5 rounded-md items-start">
-                <InfoIcon className="size-4 text-primary mt-0.5 shrink-0" />
-                <p className="text-sm text-primary leading-relaxed">
-                  O peso ponderado é calculado automaticamente como{" "}
-                  <strong>leitos ÷ total_leitos_ativos</strong> e é atualizado
-                  sempre que o inventário for modificado.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 

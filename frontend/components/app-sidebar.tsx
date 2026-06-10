@@ -40,13 +40,6 @@ const NAV_MODULES = [
   { href: "/ocupacao", label: "Taxa de Ocupação", icon: PercentIcon },
 ];
 
-const NAV_DISABLED = [
-  { label: "Diária Média", icon: TagIcon },
-  { label: "Dados Externos", icon: GlobeIcon },
-  { label: "Dashboard", icon: LayoutIcon },
-  { label: "Configurações", icon: SettingsIcon },
-];
-
 function initials(nome: string) {
   return nome
     .split(" ")
@@ -102,24 +95,6 @@ export function AppSidebar() {
                     isActive={pathname.startsWith(href)}
                     tooltip={label}
                   >
-                    <Icon />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Em breve</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_DISABLED.map(({ label, icon: Icon }) => (
-                <SidebarMenuItem key={label}>
-                  <SidebarMenuButton disabled tooltip={label}>
                     <Icon />
                     <span>{label}</span>
                   </SidebarMenuButton>
