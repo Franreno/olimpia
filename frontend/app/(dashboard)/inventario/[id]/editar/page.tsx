@@ -1,23 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeftIcon, CheckIcon } from "lucide-react";
 import { z } from "zod";
-import { useCategorias, useCreateEmpresa } from "@/lib/queries";
+import { useCategorias, useEmpresa, useUpdateEmpresa } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const HOSPEDAGEM_SLUG = "meios_hospedagem";
 const HOSPEDAGEM_TIPOS = ["Hotel", "Resort", "Flat", "Pousada", "Outro"];
 
 const schema = z.object({
-  categoria_id: z.number({ message: "Selecione uma categoria" }),
   nome_fantasia: z.string().min(1, "Nome é obrigatório"),
   razao_social: z.string().optional(),
   cnpj: z.string().optional(),
@@ -26,7 +27,9 @@ const schema = z.object({
   endereco: z.string().optional(),
   bairro: z.string().optional(),
   proprietario: z.string().optional(),
-  campos_extras: z.record(z.string(), z.unknown()).optional(),
+  contato_pesquisas: z.string().optional(),
+  telefone_pesquisas: z.string().optional(),
+  email_pesquisas: z.string().email("E-mail inválido").optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -53,22 +56,50 @@ function FieldGroup({
   );
 }
 
-export default function NovoEstabelecimentoPage() {
+export default function EditarEstabelecimentoPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { data: empresa, isLoading: loadingEmpresa } = useEmpresa(id);
   const { data: categorias = [] } = useCategorias();
-  const createEmpresa = useCreateEmpresa();
+  const updateEmpresa = useUpdateEmpresa(id);
 
-  const [values, setValues] = useState<Partial<FormValues>>({
-    campos_extras: {},
-  });
-  const [tipo, setTipo] = useState<string>("");
+  const [values, setValues] = useState<Partial<FormValues>>({});
+  const [aceitaPesquisas, setAceitaPesquisas] = useState(true);
+  const [tipo, setTipo] = useState("");
   const [uhs, setUhs] = useState("");
   const [leitos, setLeitos] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const selectedCat = categorias.find((c) => c.id === values.categoria_id);
-  const isHospedagem = selectedCat?.slug === HOSPEDAGEM_SLUG;
+  const initialized = useRef(false);
+
+  const categoria = categorias.find((c) => c.id === empresa?.categoria_id);
+  const isHospedagem = categoria?.slug === HOSPEDAGEM_SLUG;
+
+  useEffect(() => {
+    if (!empresa || initialized.current) return;
+    initialized.current = true;
+
+    setValues({
+      nome_fantasia: empresa.nome_fantasia,
+      razao_social: empresa.razao_social ?? "",
+      cnpj: empresa.cnpj ?? "",
+      telefone: empresa.telefone ?? "",
+      email: empresa.email ?? "",
+      endereco: empresa.endereco ?? "",
+      bairro: empresa.bairro ?? "",
+      proprietario: empresa.proprietario ?? "",
+      contato_pesquisas: empresa.contato_pesquisas ?? "",
+      telefone_pesquisas: empresa.telefone_pesquisas ?? "",
+      email_pesquisas: empresa.email_pesquisas ?? "",
+    });
+    setAceitaPesquisas(empresa.aceita_pesquisas);
+
+    const extras = (empresa.campos_extras ?? {}) as Record<string, unknown>;
+    setTipo(typeof extras.tipo === "string" ? extras.tipo : "");
+    setUhs(extras.uhs != null ? String(extras.uhs) : "");
+    setLeitos(extras.leitos != null ? String(extras.leitos) : "");
+  }, [empresa]);
 
   function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -93,24 +124,44 @@ export default function NovoEstabelecimentoPage() {
       return;
     }
 
-    const campos_extras: Record<string, unknown> = {};
+    const campos_extras: Record<string, unknown> = {
+      ...(empresa?.campos_extras ?? {}),
+    };
     if (isHospedagem) {
       if (tipo) campos_extras.tipo = tipo;
-      if (uhs) campos_extras.uhs = parseInt(uhs);
-      if (leitos) campos_extras.leitos = parseInt(leitos);
+      else delete campos_extras.tipo;
+      if (uhs !== "") campos_extras.uhs = parseInt(uhs);
+      if (leitos !== "") campos_extras.leitos = parseInt(leitos);
     }
 
     try {
-      const created = await createEmpresa.mutateAsync({
+      await updateEmpresa.mutateAsync({
         ...parsed.data,
+        email: parsed.data.email || undefined,
+        email_pesquisas: parsed.data.email_pesquisas || undefined,
+        aceita_pesquisas: aceitaPesquisas,
         campos_extras,
       });
-      router.push(`/inventario/${created.id}`);
+      router.push(`/inventario/${id}`);
     } catch {
       setSubmitError(
-        "Erro ao salvar estabelecimento. Verifique os dados e tente novamente."
+        "Erro ao salvar alterações. Verifique os dados e tente novamente."
       );
     }
+  }
+
+  if (loadingEmpresa) {
+    return (
+      <div className="flex flex-col gap-4 max-w-3xl">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    );
+  }
+
+  if (!empresa) {
+    return <Alert variant="destructive">Estabelecimento não encontrado.</Alert>;
   }
 
   return (
@@ -119,32 +170,33 @@ export default function NovoEstabelecimentoPage() {
         <Button
           variant="ghost"
           size="sm"
-          render={<Link href="/inventario" />}
+          render={<Link href={`/inventario/${id}`} />}
           nativeButton={false}
         >
           <ArrowLeftIcon data-icon="inline-start" />
-          Voltar ao inventário
+          Voltar para detalhes
         </Button>
         <div className="flex gap-2">
           <Button
             variant="ghost"
-            render={<Link href="/inventario" />}
+            render={<Link href={`/inventario/${id}`} />}
             nativeButton={false}
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={createEmpresa.isPending}>
+          <Button type="submit" disabled={updateEmpresa.isPending}>
             <CheckIcon data-icon="inline-start" />
-            {createEmpresa.isPending ? "Salvando…" : "Salvar estabelecimento"}
+            {updateEmpresa.isPending ? "Salvando…" : "Salvar alterações"}
           </Button>
         </div>
       </div>
 
-      <h1 className="text-xl font-bold">Novo estabelecimento</h1>
+      <div>
+        <h1 className="text-xl font-bold">Editar estabelecimento</h1>
+        <p className="text-sm text-muted-foreground">{empresa.nome_fantasia}</p>
+      </div>
 
-      {submitError && (
-        <Alert variant="destructive">{submitError}</Alert>
-      )}
+      {submitError && <Alert variant="destructive">{submitError}</Alert>}
 
       {/* Identificação */}
       <Card>
@@ -234,27 +286,17 @@ export default function NovoEstabelecimentoPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <FieldGroup label="Categoria" required>
-            <div className="flex flex-wrap gap-2">
-              {categorias.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => set("categoria_id", cat.id)}
-                  className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm transition-all",
-                    values.categoria_id === cat.id
-                      ? "border-primary bg-primary/10 text-primary font-semibold"
-                      : "border-border bg-background text-foreground hover:bg-muted"
-                  )}
-                >
-                  {cat.nome}
-                </button>
-              ))}
+          <FieldGroup label="Categoria">
+            <div>
+              {categoria && (
+                <Badge className="bg-[#E8F4F8] text-[#2E86AB] border-transparent hover:bg-[#E8F4F8]">
+                  {categoria.nome}
+                </Badge>
+              )}
             </div>
-            {errors.categoria_id && (
-              <p className="text-xs text-destructive">{errors.categoria_id}</p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              A categoria não pode ser alterada após o cadastro.
+            </p>
           </FieldGroup>
 
           {isHospedagem && (
@@ -320,6 +362,71 @@ export default function NovoEstabelecimentoPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Contato para pesquisas */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+            Contato para pesquisas
+          </CardTitle>
+          <CardDescription>
+            Usado para convidar o estabelecimento a participar das pesquisas
+            de ocupação e demanda.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <FieldGroup label="Aceita participar de pesquisas">
+            <div className="flex gap-2">
+              {[
+                { label: "Sim", value: true },
+                { label: "Não", value: false },
+              ].map((opt) => (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => setAceitaPesquisas(opt.value)}
+                  className={cn(
+                    "rounded-full border px-4 py-1.5 text-sm transition-all",
+                    aceitaPesquisas === opt.value
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border bg-background text-foreground hover:bg-muted"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </FieldGroup>
+          <div className="grid grid-cols-2 gap-4">
+            <FieldGroup label="Responsável">
+              <Input
+                placeholder="Nome do responsável"
+                value={values.contato_pesquisas ?? ""}
+                onChange={(e) => set("contato_pesquisas", e.target.value)}
+              />
+            </FieldGroup>
+            <FieldGroup label="Telefone">
+              <Input
+                placeholder="(17) 00000-0000"
+                value={values.telefone_pesquisas ?? ""}
+                onChange={(e) => set("telefone_pesquisas", e.target.value)}
+              />
+            </FieldGroup>
+            <FieldGroup label="E-mail" className="col-span-2">
+              <Input
+                type="email"
+                placeholder="pesquisas@estabelecimento.com"
+                value={values.email_pesquisas ?? ""}
+                onChange={(e) => set("email_pesquisas", e.target.value)}
+                aria-invalid={!!errors.email_pesquisas}
+              />
+              {errors.email_pesquisas && (
+                <p className="text-xs text-destructive">{errors.email_pesquisas}</p>
+              )}
+            </FieldGroup>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 }

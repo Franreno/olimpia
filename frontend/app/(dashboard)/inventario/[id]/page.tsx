@@ -40,6 +40,103 @@ function FieldRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
+const AUDIT_FIELD_LABELS: Record<string, string> = {
+  nome_fantasia: "Nome fantasia",
+  razao_social: "Razão social",
+  cnpj: "CNPJ",
+  endereco: "Endereço",
+  bairro: "Bairro",
+  telefone: "Telefone",
+  email: "E-mail",
+  status: "Status",
+  data_baixa: "Data de baixa",
+  aceita_pesquisas: "Aceita pesquisas",
+  contato_pesquisas: "Responsável pelas pesquisas",
+  telefone_pesquisas: "Telefone para pesquisas",
+  email_pesquisas: "E-mail para pesquisas",
+  proprietario: "Proprietário",
+  uhs: "Número de UHs",
+  leitos: "Número de leitos",
+  tipo: "Tipo",
+  capacidade: "Capacidade",
+  tipo_culinaria: "Tipo de culinária",
+  capacidade_pessoas: "Capacidade (pessoas)",
+  subcategoria: "Subcategoria",
+};
+
+const AUDIT_PAGE_SIZE = 8;
+
+function auditFieldLabel(field?: string | null): string {
+  if (!field) return "campo";
+  return AUDIT_FIELD_LABELS[field] ?? field;
+}
+
+function isEmptyAuditValue(value: unknown): boolean {
+  if (value === null || value === undefined || value === "") return true;
+  if (typeof value === "object") {
+    return Array.isArray(value)
+      ? value.length === 0
+      : Object.keys(value as object).length === 0;
+  }
+  return false;
+}
+
+function formatAuditValue(field: string | undefined, value: unknown): string {
+  if (isEmptyAuditValue(value)) return "—";
+  if (field === "status") {
+    if (value === "ativo") return "Ativo";
+    if (value === "inativo") return "Inativo";
+    return String(value);
+  }
+  if (typeof value === "boolean") return value ? "Sim" : "Não";
+  if (field === "data_baixa" && typeof value === "string") {
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) return d.toLocaleDateString("pt-BR");
+  }
+  return String(value);
+}
+
+function auditInitials(name?: string | null): string {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// Older audit rows (before per-key campos_extras diffing) logged the whole
+// dict as one row — diff it client-side so it renders like the newer rows.
+function isLegacyCamposExtrasRow(log: AuditLog): boolean {
+  return (
+    log.operacao === "UPDATE" &&
+    log.campo_alterado === "campos_extras" &&
+    isPlainObject(log.valor_anterior) &&
+    isPlainObject(log.valor_novo)
+  );
+}
+
+function camposExtrasDiff(
+  oldVal: unknown,
+  newVal: unknown
+): { key: string; oldV: unknown; newV: unknown }[] {
+  const oldObj = isPlainObject(oldVal) ? oldVal : {};
+  const newObj = isPlainObject(newVal) ? newVal : {};
+  const diffs: { key: string; oldV: unknown; newV: unknown }[] = [];
+  for (const key of new Set([...Object.keys(oldObj), ...Object.keys(newObj)])) {
+    const oldV = oldObj[key];
+    const newV = newObj[key];
+    const normOld = isEmptyAuditValue(oldV) ? null : oldV;
+    const normNew = isEmptyAuditValue(newV) ? null : newV;
+    if (normOld === normNew) continue;
+    diffs.push({ key, oldV, newV });
+  }
+  return diffs;
+}
+
 function AuditEntry({ entry, isLast }: { entry: AuditLog; isLast: boolean }) {
   const when = new Date(entry.criado_em).toLocaleString("pt-BR");
   const isInsert = entry.operacao === "INSERT";
@@ -47,13 +144,16 @@ function AuditEntry({ entry, isLast }: { entry: AuditLog; isLast: boolean }) {
   return (
     <div className="flex gap-3 relative">
       {!isLast && (
-        <div className="absolute left-3.5 top-7 w-px h-full bg-border" />
+        <div className="absolute left-3.5 top-7 bottom-0 w-px bg-border" />
       )}
       <div className="size-7 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-semibold text-primary shrink-0 z-10">
-        {entry.usuario_id ? "U" : "?"}
+        {auditInitials(entry.usuario_nome)}
       </div>
       <div className="flex-1 pt-0.5 pb-5">
         <div className="flex items-center gap-2 mb-1">
+          {entry.usuario_nome && (
+            <span className="text-sm font-medium">{entry.usuario_nome}</span>
+          )}
           <span className="text-xs text-muted-foreground">{when}</span>
         </div>
         {isInsert ? (
@@ -62,16 +162,34 @@ function AuditEntry({ entry, isLast }: { entry: AuditLog; isLast: boolean }) {
               Criou o estabelecimento
             </Badge>
           </p>
+        ) : isLegacyCamposExtrasRow(entry) ? (
+          <div className="flex flex-col gap-1">
+            {camposExtrasDiff(entry.valor_anterior, entry.valor_novo).map(
+              ({ key, oldV, newV }) => (
+                <p key={key} className="text-sm text-foreground">
+                  Alterou{" "}
+                  <strong className="font-medium">{auditFieldLabel(key)}</strong>:{" "}
+                  <span className="rounded px-1.5 py-0.5 bg-warning/10 text-warning text-xs">
+                    {formatAuditValue(key, oldV)}
+                  </span>{" "}
+                  →{" "}
+                  <span className="rounded px-1.5 py-0.5 bg-[--success]/10 text-[--success] text-xs">
+                    {formatAuditValue(key, newV)}
+                  </span>
+                </p>
+              )
+            )}
+          </div>
         ) : (
           <p className="text-sm text-foreground">
             Alterou{" "}
-            <strong className="font-medium">{entry.campo_alterado}</strong>:{" "}
+            <strong className="font-medium">{auditFieldLabel(entry.campo_alterado)}</strong>:{" "}
             <span className="rounded px-1.5 py-0.5 bg-warning/10 text-warning text-xs">
-              {String(entry.valor_anterior ?? "—")}
+              {formatAuditValue(entry.campo_alterado, entry.valor_anterior)}
             </span>{" "}
             →{" "}
             <span className="rounded px-1.5 py-0.5 bg-[--success]/10 text-[--success] text-xs">
-              {String(entry.valor_novo ?? "—")}
+              {formatAuditValue(entry.campo_alterado, entry.valor_novo)}
             </span>
           </p>
         )}
@@ -84,9 +202,17 @@ export default function EmpresaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>("info");
+  const [auditLimit, setAuditLimit] = useState(AUDIT_PAGE_SIZE);
 
   const { data: empresa, isLoading: loadingEmpresa } = useEmpresa(id);
   const { data: auditLogs = [], isLoading: loadingAudit } = useAuditLog(id);
+  const visibleAuditLogs = auditLogs.filter((log) => {
+    if (log.operacao !== "UPDATE") return true;
+    if (isLegacyCamposExtrasRow(log)) {
+      return camposExtrasDiff(log.valor_anterior, log.valor_novo).length > 0;
+    }
+    return !(isEmptyAuditValue(log.valor_anterior) && isEmptyAuditValue(log.valor_novo));
+  });
   const { data: categorias = [] } = useCategorias();
   const softDelete = useSoftDeleteEmpresa();
 
@@ -332,20 +458,32 @@ export default function EmpresaDetailPage() {
                   <Skeleton key={i} className="h-12 w-full" />
                 ))}
               </div>
-            ) : auditLogs.length === 0 ? (
+            ) : visibleAuditLogs.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Sem registros de alteração.
               </p>
             ) : (
-              <div>
-                {auditLogs.map((log, i) => (
-                  <AuditEntry
-                    key={log.id}
-                    entry={log}
-                    isLast={i === auditLogs.length - 1}
-                  />
-                ))}
-              </div>
+              <>
+                <div>
+                  {visibleAuditLogs.slice(0, auditLimit).map((log, i, arr) => (
+                    <AuditEntry
+                      key={log.id}
+                      entry={log}
+                      isLast={i === arr.length - 1}
+                    />
+                  ))}
+                </div>
+                {visibleAuditLogs.length > auditLimit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-1"
+                    onClick={() => setAuditLimit((n) => n + AUDIT_PAGE_SIZE)}
+                  >
+                    Mostrar mais
+                  </Button>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

@@ -52,6 +52,7 @@ export interface AuditLog {
   tabela: string;
   registro_id: string;
   usuario_id?: string;
+  usuario_nome?: string | null;
   operacao: "INSERT" | "UPDATE" | "DELETE";
   campo_alterado?: string;
   valor_anterior?: unknown;
