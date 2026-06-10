@@ -26,6 +26,9 @@ const schema = z.object({
   endereco: z.string().optional(),
   bairro: z.string().optional(),
   proprietario: z.string().optional(),
+  contato_pesquisas: z.string().optional(),
+  telefone_pesquisas: z.string().optional(),
+  email_pesquisas: z.string().email("E-mail inválido").optional().or(z.literal("")),
   campos_extras: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -64,6 +67,7 @@ export default function NovoEstabelecimentoPage() {
   const [tipo, setTipo] = useState<string>("");
   const [uhs, setUhs] = useState("");
   const [leitos, setLeitos] = useState("");
+  const [aceitaPesquisas, setAceitaPesquisas] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -103,6 +107,9 @@ export default function NovoEstabelecimentoPage() {
     try {
       const created = await createEmpresa.mutateAsync({
         ...parsed.data,
+        email: parsed.data.email || undefined,
+        email_pesquisas: parsed.data.email_pesquisas || undefined,
+        aceita_pesquisas: aceitaPesquisas,
         campos_extras,
       });
       router.push(`/inventario/${created.id}`);
@@ -320,6 +327,71 @@ export default function NovoEstabelecimentoPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Contato para pesquisas */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+            Contato para pesquisas
+          </CardTitle>
+          <CardDescription>
+            Usado para convidar o estabelecimento a participar das pesquisas
+            de ocupação e demanda.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <FieldGroup label="Aceita participar de pesquisas">
+            <div className="flex gap-2">
+              {[
+                { label: "Sim", value: true },
+                { label: "Não", value: false },
+              ].map((opt) => (
+                <button
+                  key={String(opt.value)}
+                  type="button"
+                  onClick={() => setAceitaPesquisas(opt.value)}
+                  className={cn(
+                    "rounded-full border px-4 py-1.5 text-sm transition-all",
+                    aceitaPesquisas === opt.value
+                      ? "border-primary bg-primary/10 text-primary font-semibold"
+                      : "border-border bg-background text-foreground hover:bg-muted"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </FieldGroup>
+          <div className="grid grid-cols-2 gap-4">
+            <FieldGroup label="Responsável">
+              <Input
+                placeholder="Nome do responsável"
+                value={values.contato_pesquisas ?? ""}
+                onChange={(e) => set("contato_pesquisas", e.target.value)}
+              />
+            </FieldGroup>
+            <FieldGroup label="Telefone">
+              <Input
+                placeholder="(17) 00000-0000"
+                value={values.telefone_pesquisas ?? ""}
+                onChange={(e) => set("telefone_pesquisas", e.target.value)}
+              />
+            </FieldGroup>
+            <FieldGroup label="E-mail" className="col-span-2">
+              <Input
+                type="email"
+                placeholder="pesquisas@estabelecimento.com"
+                value={values.email_pesquisas ?? ""}
+                onChange={(e) => set("email_pesquisas", e.target.value)}
+                aria-invalid={!!errors.email_pesquisas}
+              />
+              {errors.email_pesquisas && (
+                <p className="text-xs text-destructive">{errors.email_pesquisas}</p>
+              )}
+            </FieldGroup>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 }
