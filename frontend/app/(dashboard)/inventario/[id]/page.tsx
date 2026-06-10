@@ -158,7 +158,7 @@ function AuditEntry({ entry, isLast }: { entry: AuditLog; isLast: boolean }) {
         </div>
         {isInsert ? (
           <p className="text-sm">
-            <Badge className="bg-[--success]/15 text-[--success] border-transparent">
+            <Badge className="bg-success/15 text-success border-transparent">
               Criou o estabelecimento
             </Badge>
           </p>
@@ -173,7 +173,7 @@ function AuditEntry({ entry, isLast }: { entry: AuditLog; isLast: boolean }) {
                     {formatAuditValue(key, oldV)}
                   </span>{" "}
                   →{" "}
-                  <span className="rounded px-1.5 py-0.5 bg-[--success]/10 text-[--success] text-xs">
+                  <span className="rounded px-1.5 py-0.5 bg-success/10 text-success text-xs">
                     {formatAuditValue(key, newV)}
                   </span>
                 </p>
@@ -188,7 +188,7 @@ function AuditEntry({ entry, isLast }: { entry: AuditLog; isLast: boolean }) {
               {formatAuditValue(entry.campo_alterado, entry.valor_anterior)}
             </span>{" "}
             →{" "}
-            <span className="rounded px-1.5 py-0.5 bg-[--success]/10 text-[--success] text-xs">
+            <span className="rounded px-1.5 py-0.5 bg-success/10 text-success text-xs">
               {formatAuditValue(entry.campo_alterado, entry.valor_novo)}
             </span>
           </p>
@@ -309,7 +309,7 @@ export default function EmpresaDetailPage() {
                   variant="secondary"
                   className={
                     empresa.status === "ativo"
-                      ? "bg-[--success]/15 text-[--success] border-transparent hover:bg-[--success]/20"
+                      ? "bg-success/15 text-success border-transparent hover:bg-success/20"
                       : "bg-muted text-muted-foreground border-transparent"
                   }
                 >
@@ -423,7 +423,7 @@ export default function EmpresaDetailPage() {
                 label: "Tipo de hospedagem",
                 key: "tipo",
                 sub: "hotel, resort, flat ou pousada",
-                color: "text-[--success]",
+                color: "text-success",
               },
             ].map((s) => (
               <Card key={s.key}>

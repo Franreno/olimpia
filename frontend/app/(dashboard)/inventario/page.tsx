@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { PlusIcon, DownloadIcon, SearchIcon } from "lucide-react";
+import { PlusIcon, DownloadIcon, SearchIcon, EyeIcon, PencilIcon } from "lucide-react";
 import { useEmpresas, useCategorias } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -200,7 +200,7 @@ export default function InventarioPage() {
                           }
                           className={
                             emp.status === "ativo"
-                              ? "bg-[--success]/15 text-[--success] hover:bg-[--success]/20 border-transparent"
+                              ? "bg-success/15 text-success hover:bg-success/20 border-transparent"
                               : "text-muted-foreground"
                           }
                         >
@@ -217,19 +217,21 @@ export default function InventarioPage() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             render={<Link href={`/inventario/${emp.id}`} />}
                             nativeButton={false}
                           >
+                            <EyeIcon data-icon="inline-start" />
                             Ver
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             render={<Link href={`/inventario/${emp.id}/editar`} />}
                             nativeButton={false}
                           >
+                            <PencilIcon data-icon="inline-start" />
                             Editar
                           </Button>
                         </div>
