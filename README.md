@@ -22,6 +22,16 @@ Diretor, portal externo do trade e integrações via API com fontes externas.
 
 ---
 
+## Status do projeto
+
+- ✅ **Sprint 1** — fundação do backend: auth JWT + RBAC, CRUD de `empresa`/`categoria_empresa`, audit log append-only.
+- ✅ **Sprint 2** — frontend do Módulo 1 (Inventário): lista com busca/filtros, criação, edição, detalhe com abas (dados gerais, dados de hospedagem, histórico de alterações).
+- ⏭️ **Próximo** — painel de respondentes de pesquisa (1.7) e Módulo 2 (Pesquisa de Demanda Turística, Sprint 3).
+
+Checklist completo de user stories e status por item: [`user-stories-todo.md`](user-stories-todo.md).
+
+---
+
 ## Stack tecnológica
 
 ### Backend
@@ -34,8 +44,8 @@ Diretor, portal externo do trade e integrações via API com fontes externas.
 - **pytest** com testes contra um banco Postgres real (`oto_test`) — TDD red/green em todos os módulos
 
 ### Frontend
-- **Next.js 14** (App Router) + **TypeScript**
-- **Tailwind CSS**
+- **Next.js 16** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS v4** + **shadcn/ui**
 - **React Query (TanStack Query)** para data fetching/cache
 - **Zod** para validação de formulários
 - **PWA** com service worker para suporte offline no formulário de campo (Módulo 2)
@@ -62,25 +72,33 @@ Diretor, portal externo do trade e integrações via API com fontes externas.
 
 ```
 .
-├── database.schema           # schema completo em sintaxe dbdiagram.io
-├── docker-compose.yml        # orquestra postgres, redis e backend
-├── user-stories-todo.md      # checklist de user stories
-├── backend/                  # API FastAPI
+├── Makefile                   # atalhos para infra, migrations, testes e dev servers
+├── database.schema            # schema completo em sintaxe dbdiagram.io
+├── docker-compose.yml         # orquestra postgres, redis, backend e frontend
+├── user-stories-todo.md       # checklist de user stories
+├── backend/                   # API FastAPI
 │   ├── app/
-│   │   ├── api/v1/           # routers (auth, inventario, demanda, ocupacao)
-│   │   ├── core/             # config, security (JWT/bcrypt), rbac, redis, logging
-│   │   ├── db/               # Base declarativa, sessão, seed
-│   │   ├── models/           # modelos SQLAlchemy (espelham database.schema)
-│   │   ├── schemas/          # schemas Pydantic de request/response
-│   │   ├── crud/             # funções de acesso ao banco
-│   │   ├── workers/          # tarefas Celery (recálculo da taxa ponderada)
-│   │   ├── migrations/       # Alembic (env.py + versions/)
-│   │   └── main.py           # app FastAPI, middlewares, registro de routers
-│   ├── tests/                # suíte pytest (espelha a estrutura de app/)
+│   │   ├── api/v1/            # routers (auth, inventario, demanda, ocupacao)
+│   │   ├── core/               # config, security (JWT/bcrypt), rbac, redis, logging
+│   │   ├── db/                  # Base declarativa, sessão, seed
+│   │   ├── models/               # modelos SQLAlchemy (espelham database.schema)
+│   │   ├── schemas/                # schemas Pydantic de request/response
+│   │   ├── crud/                    # funções de acesso ao banco
+│   │   ├── workers/                  # tarefas Celery (recálculo da taxa ponderada)
+│   │   ├── migrations/                # Alembic (env.py + versions/)
+│   │   └── main.py                     # app FastAPI, middlewares, registro de routers
+│   ├── tests/                 # suíte pytest (espelha a estrutura de app/)
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── .env.example
-└── frontend/                 # Next.js 14 (scaffold inicial — UI chega no Sprint 2+)
+└── frontend/                  # Next.js 16 + React 19 (App Router)
+    ├── app/
+    │   ├── login/               # tela de login
+    │   └── (dashboard)/          # layout autenticado (sidebar, header)
+    │       └── inventario/        # M1: lista, detalhe, novo, editar
+    ├── components/              # componentes shadcn/ui + app-sidebar, auth-guard
+    ├── lib/                      # api client, auth context, react-query hooks, types
+    └── Dockerfile
 ```
 
 ---
@@ -93,6 +111,34 @@ Diretor, portal externo do trade e integrações via API com fontes externas.
 
 ---
 
+## Comandos rápidos (Makefile)
+
+O `Makefile` na raiz do projeto cobre o fluxo de desenvolvimento do dia a dia.
+Liste todos os alvos com:
+
+```bash
+make help
+```
+
+| Categoria | Alvos | Descrição |
+|---|---|---|
+| Infra | `up`, `up-all`, `down`, `restart`, `logs`, `ps` | `up` sobe só `db`+`redis`; `up-all` sobe tudo containerizado |
+| Banco de dados | `migrate`, `migrate-new m="..."`, `seed`, `db-reset` | Alembic + seed idempotente |
+| Backend | `dev-be`, `test`, `test-file f=...`, `install-be` | servidor com reload, suíte pytest, dependências |
+| Frontend | `dev-fe`, `build-fe`, `lint-fe`, `install-fe` | Next.js dev/build/lint/instalação |
+| Composto | `setup`, `dev` | `setup` faz o primeiro provisionamento completo; `dev` sobe infra + backend + frontend juntos |
+
+Primeira vez no projeto:
+
+```bash
+make setup   # infra up, migrate, seed, install-fe
+make dev     # backend (uvicorn --reload) + frontend (npm run dev)
+```
+
+Os passos manuais equivalentes (sem Makefile) estão descritos abaixo.
+
+---
+
 ## Como rodar
 
 ### 1. Subir a infraestrutura (Postgres + Redis + API)
@@ -100,6 +146,7 @@ Diretor, portal externo do trade e integrações via API com fontes externas.
 ```bash
 cp backend/.env.example backend/.env   # ajuste os valores conforme necessário
 docker compose up -d
+# equivalente: make up (apenas db+redis) ou make up-all (tudo containerizado)
 ```
 
 A API ficará disponível em `http://localhost:8000` (com reload automático),
@@ -116,6 +163,7 @@ conda create -y -n oto -c conda-forge python=3.12
 conda activate oto
 cd backend
 python -m pip install -r requirements.txt
+# equivalente: make install-be
 ```
 
 Aplique as migrations e popule os dados iniciais (categorias de empresa + um
@@ -124,12 +172,14 @@ usuário de teste por perfil):
 ```bash
 alembic upgrade head
 python -m app.db.seed
+# equivalente: make migrate seed
 ```
 
 Suba a API localmente (alternativa ao container):
 
 ```bash
 uvicorn app.main:app --reload
+# equivalente: make dev-be
 ```
 
 ### 3. Frontend
@@ -138,6 +188,7 @@ uvicorn app.main:app --reload
 cd frontend
 npm install
 npm run dev
+# equivalente: make install-fe dev-fe
 ```
 
 Disponível em `http://localhost:3000`.
@@ -155,6 +206,7 @@ SAVEPOINT) e o Redis de teste usa um banco lógico dedicado (DB 15).
 ```bash
 cd backend
 conda run -n oto python -m pytest -q
+# equivalente: make test (ou make test-file f=tests/api/test_auth.py)
 ```
 
 ---

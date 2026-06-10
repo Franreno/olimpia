@@ -20,13 +20,27 @@ Sprint mapping follows `CLAUDE.md` §9. This file is updated as each sprint land
 
 ---
 
+## Sprint 2 — Frontend M1 (Inventário)
+
+| ID | História | Prioridade | Status | Notes |
+|---|---|---|---|---|
+| 1.1 | Cadastrar empresas por categoria | Obrigatório | **verified** | `/inventario/novo` — formulário completo (Identificação, Classificação, Contato para pesquisas) — smoke-tested end-to-end (form → `POST /empresas` → detalhe) |
+| 1.2 | Campos específicos por categoria (UHs e leitos para MH, capacidade para A&B) | Obrigatório | **in progress** | Implementado para Meios de Hospedagem (tipo, UHs, leitos) em `novo`/`editar`/detalhe ("Dados de Hospedagem"); demais categorias (alimentação, atrativos, agências, eventos, serviços de apoio) ainda sem campos específicos na UI |
+| 1.3 | Toda alteração registrada em audit log com autor, data e valores | Obrigatório | **verified** | `/inventario/[id]` aba "Histórico de alterações" — diff por campo (PT-BR labels), avatar com iniciais, valores antigo/novo destacados, paginação ("Mostrar mais") |
+| 1.4 | Empresas encerradas marcadas como inativas (nunca deletar) | Obrigatório | **verified** | Botão "Inativar" no detalhe (com confirmação) → `DELETE /empresas/{id}` → `status=inativo` + badge cinza na lista |
+| 1.5 | Buscar e filtrar empresas por categoria, status e nome | Obrigatório | **verified** | `/inventario` — busca por nome + chips de categoria/status, contagem de resultados |
+| — | Lista do inventário fiel ao protótipo (badges de status, botões Ver/Editar com ícone) | — | **verified** | Badge verde "Ativo" / cinza "Inativo"; ações "Ver"/"Editar" com `variant=outline` + ícones `Eye`/`Pencil` |
+
+**Pendente do escopo do Sprint 2** (CLAUDE.md §9, item 9 — "painel de respondentes de pesquisa"): ver 1.7 abaixo.
+
+---
+
 ## Module 1 — Inventário (remaining, later sprints)
 
 | ID | História | Prioridade | Status | Notes |
 |---|---|---|---|---|
-| 1.2 | Campos específicos por categoria (UHs/leitos, capacidade, etc.) | Obrigatório | not started | `empresa.campos_extras` JSONB — UI in Sprint 2 |
 | 1.6 | Alterar leitos recalcula peso ponderado | Obrigatório | not started | depends on M3 Celery worker (Sprint 4) |
-| 1.7 | Registrar quais estabelecimentos participam de cada pesquisa | Obrigatório | not started | `respondente_pesquisa` |
+| 1.7 | Registrar quais estabelecimentos participam de cada pesquisa | Obrigatório | not started | `respondente_pesquisa` model exists (Sprint 1 migration) — sem CRUD/API nem painel de respondentes na UI |
 | 1.8 | Numeração protocolar automática (XXX/AA) | Importante | not started | |
 | 1.9 | Importar base Excel existente na migração inicial | Obrigatório | not started | seed/import script — partial pattern established via seed.py |
 
@@ -67,7 +81,7 @@ Sprint mapping follows `CLAUDE.md` §9. This file is updated as each sprint land
 
 | ID | História | Prioridade | Status | Notes |
 |---|---|---|---|---|
-| 5.1 | Acesso via browser, sem instalação | Obrigatório | **done** | Next.js 16 + shadcn frontend — builds cleanly, routes /login /inventario /inventario/[id] /inventario/novo |
+| 5.1 | Acesso via browser, sem instalação | Obrigatório | **done** | Next.js 16 + shadcn frontend — builds cleanly, routes /login /inventario /inventario/[id] /inventario/[id]/editar /inventario/novo |
 | 5.2 | Formulário otimizado para toque em tablet | Obrigatório | not started | Sprint 3 |
 | 5.4 | Backup automático diário, rollback de 30 dias | Obrigatório | not started | infra-level — TBD with TI da Prefeitura |
 | 5.5 | Criar novos tipos de pesquisa sem developer | Obrigatório | not started | config-driven `formulario_versao.schema_json` |
