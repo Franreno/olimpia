@@ -2,7 +2,6 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-
 from app.core.rbac import get_current_user, require_role
 from app.crud import inventario as inv_crud
 from app.db.session import get_db
