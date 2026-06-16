@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Alert } from "@/components/ui/alert";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -342,22 +344,15 @@ export default function EmpresaDetailPage() {
       </Card>
 
       {/* Tabs */}
-      <div className="border-b flex gap-0">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={
-              "px-4 py-2.5 text-sm border-b-2 transition-colors " +
-              (activeTab === tab.id
-                ? "border-primary text-primary font-semibold"
-                : "border-transparent text-muted-foreground hover:text-foreground")
-            }
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
+        <TabsList variant="line">
+          {TABS.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {/* Tab content */}
       {activeTab === "info" && (
@@ -417,7 +412,7 @@ export default function EmpresaDetailPage() {
                 label: "Número de leitos",
                 key: "leitos",
                 sub: "Capacidade total de hóspedes",
-                color: "text-[oklch(0.54_0.10_210)]",
+                color: "text-primary",
               },
               {
                 label: "Tipo de hospedagem",
@@ -459,9 +454,11 @@ export default function EmpresaDetailPage() {
                 ))}
               </div>
             ) : visibleAuditLogs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Sem registros de alteração.
-              </p>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyTitle>Sem registros de alteração</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
             ) : (
               <>
                 <div>

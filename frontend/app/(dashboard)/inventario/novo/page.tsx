@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 
 const HOSPEDAGEM_SLUG = "meios_hospedagem";
@@ -242,23 +243,18 @@ export default function NovoEstabelecimentoPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <FieldGroup label="Categoria" required>
-            <div className="flex flex-wrap gap-2">
+            <ToggleGroup
+              value={values.categoria_id ? [String(values.categoria_id)] : []}
+              onValueChange={(v: string[]) => v[0] && set("categoria_id", Number(v[0]))}
+              variant="outline"
+              className="flex flex-wrap"
+            >
               {categorias.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => set("categoria_id", cat.id)}
-                  className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm transition-all",
-                    values.categoria_id === cat.id
-                      ? "border-primary bg-primary/10 text-primary font-semibold"
-                      : "border-border bg-background text-foreground hover:bg-muted"
-                  )}
-                >
+                <ToggleGroupItem key={cat.id} value={String(cat.id)}>
                   {cat.nome}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
             {errors.categoria_id && (
               <p className="text-xs text-destructive">{errors.categoria_id}</p>
             )}
@@ -266,23 +262,18 @@ export default function NovoEstabelecimentoPage() {
 
           {isHospedagem && (
             <FieldGroup label="Tipo de meio de hospedagem">
-              <div className="flex flex-wrap gap-2">
+              <ToggleGroup
+                value={tipo ? [tipo] : []}
+                onValueChange={(v: string[]) => setTipo(v[0] ?? "")}
+                variant="outline"
+                className="flex flex-wrap"
+              >
                 {HOSPEDAGEM_TIPOS.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTipo(tipo === t ? "" : t)}
-                    className={cn(
-                      "rounded-full border px-4 py-1.5 text-sm transition-all",
-                      tipo === t
-                        ? "border-primary bg-primary/10 text-primary font-semibold"
-                        : "border-border bg-background text-foreground hover:bg-muted"
-                    )}
-                  >
+                  <ToggleGroupItem key={t} value={t}>
                     {t}
-                  </button>
+                  </ToggleGroupItem>
                 ))}
-              </div>
+              </ToggleGroup>
             </FieldGroup>
           )}
         </CardContent>
@@ -341,26 +332,14 @@ export default function NovoEstabelecimentoPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <FieldGroup label="Aceita participar de pesquisas">
-            <div className="flex gap-2">
-              {[
-                { label: "Sim", value: true },
-                { label: "Não", value: false },
-              ].map((opt) => (
-                <button
-                  key={String(opt.value)}
-                  type="button"
-                  onClick={() => setAceitaPesquisas(opt.value)}
-                  className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm transition-all",
-                    aceitaPesquisas === opt.value
-                      ? "border-primary bg-primary/10 text-primary font-semibold"
-                      : "border-border bg-background text-foreground hover:bg-muted"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <ToggleGroup
+              value={[aceitaPesquisas ? "sim" : "nao"]}
+              onValueChange={(v: string[]) => v[0] && setAceitaPesquisas(v[0] === "sim")}
+              variant="outline"
+            >
+              <ToggleGroupItem value="sim">Sim</ToggleGroupItem>
+              <ToggleGroupItem value="nao">Não</ToggleGroupItem>
+            </ToggleGroup>
           </FieldGroup>
           <div className="grid grid-cols-2 gap-4">
             <FieldGroup label="Responsável">

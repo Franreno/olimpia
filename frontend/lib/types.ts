@@ -45,7 +45,7 @@ export interface EmpresaCreate {
   campos_extras?: Record<string, unknown>;
 }
 
-export interface EmpresaUpdate extends Partial<EmpresaCreate> {}
+export type EmpresaUpdate = Partial<EmpresaCreate>;
 
 export interface AuditLog {
   id: number;

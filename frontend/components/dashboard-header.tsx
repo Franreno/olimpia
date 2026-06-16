@@ -11,6 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -79,12 +80,9 @@ export function DashboardHeader() {
       </Breadcrumb>
 
       <div className="flex items-center gap-1.5">
-        <button
-          className="relative rounded-md p-2 text-muted-foreground hover:bg-muted"
-          aria-label="Notificações"
-        >
-          <BellIcon className="size-5" />
-        </button>
+        <Button variant="ghost" size="icon" aria-label="Notificações">
+          <BellIcon />
+        </Button>
         <Avatar className="size-8">
           <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
             {user ? initials(user.nome) : "?"}

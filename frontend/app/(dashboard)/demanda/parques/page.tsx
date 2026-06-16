@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
 export default function ParquesPage() {
@@ -88,11 +89,14 @@ export default function ParquesPage() {
           ))}
 
         {!isLoading && parques.length === 0 && (
-          <Card>
-            <CardContent className="p-8 text-center text-sm text-muted-foreground">
-              Nenhum parque cadastrado ainda.
-            </CardContent>
-          </Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <MapPinIcon />
+              </EmptyMedia>
+              <EmptyTitle>Nenhum parque cadastrado ainda</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         )}
 
         {parques.map((p) => (

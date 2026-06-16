@@ -1,12 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import {
-  CheckIcon,
-  TriangleAlertIcon,
-  LayoutDashboardIcon,
-} from "lucide-react";
+import { useState } from "react";
+import { CheckIcon, TriangleAlertIcon, LayoutDashboardIcon } from "lucide-react";
 import {
   useCidades,
   useFormularioAtivo,
@@ -15,6 +11,18 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import type { Cidade } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
 const INCOME_RANGES = [
@@ -50,7 +58,7 @@ export default function FieldFormPage() {
   const { data: parques = [] } = useParques(true);
   const createResposta = useCreateResposta();
 
-  const [park, setPark] = useState<string>("");
+  const [selectedPark, setSelectedPark] = useState<string | null>(null);
   const [cityQuery, setCityQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState<Cidade | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -64,10 +72,9 @@ export default function FieldFormPage() {
 
   const { data: citySuggestions = [] } = useCidades(cityQuery);
 
-  // default to the first active park once they load
-  useEffect(() => {
-    if (!park && parques.length > 0) setPark(parques[0].slug);
-  }, [parques, park]);
+  // derive the active park: explicit selection, else the first active park
+  const park = selectedPark ?? parques[0]?.slug ?? "";
+  const setPark = setSelectedPark;
 
   const fator =
     formulario?.schema_json.regras_coerencia?.find(
@@ -80,12 +87,6 @@ export default function FieldFormPage() {
 
   const canSubmit =
     !!park && !!selectedCity && nights !== "" && spending !== "" && nps !== null;
-
-  function toggleMotivation(m: string) {
-    setMotivations((prev) =>
-      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
-    );
-  }
 
   async function handleSubmit() {
     setError(null);
@@ -124,22 +125,21 @@ export default function FieldFormPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-muted/40 flex items-center justify-center">
-        <div className="text-center px-6">
-          <div className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-success/15">
-            <CheckIcon className="size-7 text-success" />
-          </div>
-          <h2 className="text-xl font-bold mb-1.5">Formulário enviado!</h2>
-          <p className="text-sm text-muted-foreground mb-7">
-            Os dados foram registrados com sucesso.
-          </p>
-          <button
-            onClick={resetForm}
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
-          >
-            Novo formulário
-          </button>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-muted/40">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon" className="bg-success/15 text-success">
+              <CheckIcon />
+            </EmptyMedia>
+            <EmptyTitle>Formulário enviado!</EmptyTitle>
+            <EmptyDescription>
+              Os dados foram registrados com sucesso.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button onClick={resetForm}>Novo formulário</Button>
+          </EmptyContent>
+        </Empty>
       </div>
     );
   }
@@ -172,57 +172,55 @@ export default function FieldFormPage() {
 
       <div className="mx-auto max-w-2xl px-4 pb-16 pt-6">
         {error && (
-          <div className="mb-5 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-            {error}
-          </div>
+          <Alert variant="destructive" className="mb-5">
+            <TriangleAlertIcon />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         {/* Coherence warning */}
         {showCoherenceWarning && (
-          <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-warning bg-warning/10 px-4 py-3">
-            <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-warning" />
-            <div>
-              <p className="text-sm font-semibold text-warning">
-                Atenção: inconsistência detectada
-              </p>
-              <p className="text-sm text-muted-foreground">
-                O gasto diário declarado parece incompatível com a faixa de renda
-                informada. Por favor, verifique os valores com o entrevistado.
-              </p>
-            </div>
-          </div>
+          <Alert variant="warning" className="mb-5">
+            <TriangleAlertIcon />
+            <AlertTitle>Atenção: inconsistência detectada</AlertTitle>
+            <AlertDescription>
+              O gasto diário declarado parece incompatível com a faixa de renda
+              informada. Por favor, verifique os valores com o entrevistado.
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Park selector (dynamic) */}
         <Field label="Local da pesquisa" required>
           {parques.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum parque cadastrado. Cadastre um parque em Demanda → Parques.
-            </p>
+            <Empty className="border border-dashed">
+              <EmptyHeader>
+                <EmptyTitle>Nenhum parque cadastrado</EmptyTitle>
+                <EmptyDescription>
+                  Cadastre um parque em Demanda → Parques.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5">
+            <ToggleGroup
+              value={park ? [park] : []}
+              onValueChange={(v: string[]) => v[0] && setPark(v[0])}
+              variant="outline"
+              size="lg"
+              className="grid w-full grid-cols-2 gap-2.5"
+            >
               {parques.map((p) => (
-                <button
-                  key={p.slug}
-                  type="button"
-                  onClick={() => setPark(p.slug)}
-                  className={cn(
-                    "rounded-xl border-2 px-3 py-4 text-base font-medium transition-all",
-                    park === p.slug
-                      ? "border-primary bg-primary/10 font-bold text-primary"
-                      : "border-border bg-background text-foreground"
-                  )}
-                >
+                <ToggleGroupItem key={p.slug} value={p.slug} className="h-12">
                   {p.nome}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           )}
         </Field>
 
         {/* Researcher — current logged-in user (read-only) */}
         <Field label="Pesquisador(a)" required>
-          <div className="flex items-center justify-between rounded-lg border-[1.5px] border-border bg-muted/40 px-3.5 py-3 text-base">
+          <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-sm">
             <span className="font-medium text-foreground">{user?.nome ?? "—"}</span>
             {formulario && (
               <span className="text-xs text-muted-foreground">
@@ -235,7 +233,7 @@ export default function FieldFormPage() {
         {/* Origin city — IBGE autocomplete */}
         <Field label="Cidade de origem" required>
           <div className="relative">
-            <input
+            <Input
               value={selectedCity ? `${selectedCity.nome} — ${selectedCity.uf}` : cityQuery}
               onChange={(e) => {
                 setSelectedCity(null);
@@ -244,10 +242,9 @@ export default function FieldFormPage() {
               }}
               onFocus={() => setShowSuggestions(true)}
               placeholder="Digite a cidade..."
-              className="w-full rounded-lg border-[1.5px] border-border bg-background px-3.5 py-3 text-base outline-none focus:border-primary"
             />
             {showSuggestions && !selectedCity && citySuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-border bg-background shadow-lg">
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-md border bg-popover shadow-md">
                 {citySuggestions.map((c) => (
                   <button
                     key={`${c.nome}-${c.uf}`}
@@ -256,7 +253,7 @@ export default function FieldFormPage() {
                       setSelectedCity(c);
                       setShowSuggestions(false);
                     }}
-                    className="block w-full border-b border-muted px-3.5 py-2.5 text-left text-[15px] last:border-0 hover:bg-muted/50"
+                    className="block w-full border-b px-3 py-2 text-left text-sm last:border-0 hover:bg-muted/50"
                   >
                     {c.nome} — {c.uf}
                   </button>
@@ -272,50 +269,41 @@ export default function FieldFormPage() {
         {/* Nights + spending */}
         <div className="grid grid-cols-2 gap-3.5">
           <Field label="Pernoites" required>
-            <input
+            <Input
               type="number"
               min="0"
               max="30"
               value={nights}
               onChange={(e) => setNights(e.target.value)}
               placeholder="0"
-              className="w-full rounded-lg border-[1.5px] border-border bg-background px-3.5 py-3 text-base outline-none focus:border-primary"
             />
           </Field>
           <Field label="Gasto diário (R$)" required>
-            <input
+            <Input
               type="number"
               min="0"
               value={spending}
               onChange={(e) => setSpending(e.target.value)}
               placeholder="0,00"
-              className={cn(
-                "w-full rounded-lg border-[1.5px] bg-background px-3.5 py-3 text-base outline-none focus:border-primary",
-                showCoherenceWarning ? "border-warning" : "border-border"
-              )}
+              aria-invalid={showCoherenceWarning}
             />
           </Field>
         </div>
 
         {/* Income */}
         <Field label="Renda familiar mensal">
-          <div className="grid grid-cols-2 gap-2">
+          <ToggleGroup
+            value={income ? [income] : []}
+            onValueChange={(v: string[]) => setIncome(v[0] ?? "")}
+            variant="outline"
+            className="grid w-full grid-cols-2 gap-2"
+          >
             {INCOME_RANGES.map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setIncome(income === r ? "" : r)}
-                className={cn(
-                  "rounded-lg border px-3 py-2.5 text-left text-sm transition-all",
-                  income === r
-                    ? "border-2 border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-border bg-background text-foreground"
-                )}
-              >
+              <ToggleGroupItem key={r} value={r} className="justify-start">
                 {r}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         </Field>
 
         {/* Motivations */}
@@ -323,26 +311,23 @@ export default function FieldFormPage() {
           <span className="mb-2 block text-xs text-muted-foreground">
             (múltipla escolha)
           </span>
-          <div className="flex flex-wrap gap-2">
+          <ToggleGroup
+            multiple
+            value={motivations}
+            onValueChange={(v: string[]) => setMotivations(v)}
+            variant="outline"
+            className="flex flex-wrap"
+          >
             {MOTIVATIONS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => toggleMotivation(m)}
-                className={cn(
-                  "rounded-full border px-3.5 py-2 text-sm transition-all",
-                  motivations.includes(m)
-                    ? "border-2 border-primary bg-primary/10 font-semibold text-primary"
-                    : "border-border bg-background text-foreground"
-                )}
-              >
+              <ToggleGroupItem key={m} value={m}>
                 {m}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         </Field>
 
-        {/* NPS */}
+        {/* NPS — color-coded 0–10 rating scale (intentionally custom: 11 options,
+            detractor/passive/promoter color semantics) */}
         <Field label="NPS — Recomendação" required>
           <p className="mb-3 text-sm text-muted-foreground">
             Em uma escala de 0 a 10, qual a probabilidade de você recomendar
@@ -380,14 +365,14 @@ export default function FieldFormPage() {
           </div>
         </Field>
 
-        <button
-          type="button"
+        <Button
+          size="lg"
           onClick={handleSubmit}
           disabled={!canSubmit || createResposta.isPending}
-          className="mt-7 w-full rounded-lg bg-primary py-3.5 text-base font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-7 w-full"
         >
           {createResposta.isPending ? "Registrando…" : "Registrar resposta"}
-        </button>
+        </Button>
       </div>
     </div>
   );

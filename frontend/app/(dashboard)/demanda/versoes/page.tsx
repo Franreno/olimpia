@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
 export default function FormVersionsPage() {
@@ -43,17 +45,17 @@ export default function FormVersionsPage() {
         </p>
       </div>
 
-      <div className="flex items-start gap-2.5 rounded-lg border border-warning bg-warning/10 px-4 py-3">
-        <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-warning" />
-        <p className="text-sm text-muted-foreground">
-          <strong className="text-foreground">
-            O formulário ativo não pode ser modificado durante o ano em curso.
-          </strong>{" "}
+      <Alert variant="warning">
+        <TriangleAlertIcon />
+        <AlertTitle>
+          O formulário ativo não pode ser modificado durante o ano em curso.
+        </AlertTitle>
+        <AlertDescription>
           Alterações no questionário (adição ou remoção de perguntas) só entram em
           vigor na versão do próximo ano, disponível a partir de janeiro de{" "}
           {proximoAno}.
-        </p>
-      </div>
+        </AlertDescription>
+      </Alert>
 
       <div className="flex flex-col gap-3">
         {isLoading &&
@@ -66,11 +68,11 @@ export default function FormVersionsPage() {
           ))}
 
         {!isLoading && versoes.length === 0 && (
-          <Card>
-            <CardContent className="p-8 text-center text-sm text-muted-foreground">
-              Nenhuma versão de formulário cadastrada.
-            </CardContent>
-          </Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>Nenhuma versão de formulário cadastrada</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         )}
 
         {versoes.map((v) => {

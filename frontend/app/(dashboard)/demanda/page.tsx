@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DownloadIcon, ClipboardListIcon, FileSpreadsheetIcon, MapPinIcon } from "lucide-react";
 import { useIndicadores, downloadExport, useParques } from "@/lib/queries";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   ChartContainer,
   ChartTooltip,
@@ -43,13 +45,12 @@ function npsColor(nps: number | null) {
 
 export default function DemandaDashboardPage() {
   const { data: parques = [] } = useParques(true);
-  const [park, setPark] = useState<string>("");
+  const [selectedPark, setSelectedPark] = useState<string | null>(null);
   const ano = new Date().getFullYear();
 
-  // default to the first active park once they load
-  useEffect(() => {
-    if (!park && parques.length > 0) setPark(parques[0].slug);
-  }, [parques, park]);
+  // derive the active park: explicit selection, else the first park
+  const park = selectedPark ?? parques[0]?.slug ?? "";
+  const setPark = setSelectedPark;
 
   const { data, isLoading } = useIndicadores(park || undefined, ano);
 
@@ -89,27 +90,21 @@ export default function DemandaDashboardPage() {
 
       {/* Park toggle + export */}
       <div className="flex items-center justify-between">
-        <div className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
-          {parques.length === 0 && (
-            <span className="px-2 py-1 text-sm text-muted-foreground">
-              Nenhum parque cadastrado
-            </span>
-          )}
-          {parques.map((p) => (
-            <button
-              key={p.slug}
-              onClick={() => setPark(p.slug)}
-              className={cn(
-                "rounded-md px-3.5 py-1.5 text-sm transition-all",
-                park === p.slug
-                  ? "bg-background font-semibold text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {p.nome}
-            </button>
-          ))}
-        </div>
+        {parques.length === 0 ? (
+          <span className="text-sm text-muted-foreground">
+            Nenhum parque cadastrado
+          </span>
+        ) : (
+          <Tabs value={park} onValueChange={(v) => setPark(v as string)}>
+            <TabsList>
+              {parques.map((p) => (
+                <TabsTrigger key={p.slug} value={p.slug}>
+                  {p.nome}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -190,7 +185,11 @@ export default function DemandaDashboardPage() {
           <CardContent className="p-4">
             <p className="mb-4 text-sm font-semibold">Top 5 estados de origem</p>
             {(data?.mercados_emissores ?? []).length === 0 && !isLoading && (
-              <p className="text-sm text-muted-foreground">Sem dados ainda.</p>
+              <Empty>
+                <EmptyHeader>
+                  <EmptyTitle>Sem dados ainda</EmptyTitle>
+                </EmptyHeader>
+              </Empty>
             )}
             {(data?.mercados_emissores ?? []).map((m, i) => (
               <div key={m.rotulo} className="mb-3">
@@ -200,12 +199,8 @@ export default function DemandaDashboardPage() {
                 </div>
                 <div className="h-1.5 rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${m.pct}%`,
-                      backgroundColor: i === 0 ? "var(--primary)" : "oklch(0.54 0.10 210)",
-                      opacity: 1 - i * 0.12,
-                    }}
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${m.pct}%`, opacity: 1 - i * 0.12 }}
                   />
                 </div>
               </div>
@@ -221,14 +216,18 @@ export default function DemandaDashboardPage() {
             Destinos concorrentes mais considerados
           </p>
           {(data?.destinos_concorrentes ?? []).length === 0 && !isLoading ? (
-            <p className="text-sm text-muted-foreground">Sem dados ainda.</p>
+            <Empty>
+              <EmptyHeader>
+                <EmptyTitle>Sem dados ainda</EmptyTitle>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="grid gap-3.5 sm:grid-cols-3">
               {(data?.destinos_concorrentes ?? []).slice(0, 3).map((c, i) => (
                 <div key={c.rotulo} className="rounded-lg border border-border bg-muted/30 p-4">
                   <p className="mb-1 text-xs text-muted-foreground">#{i + 1}</p>
                   <p className="mb-1 text-[15px] font-semibold">{c.rotulo}</p>
-                  <p className="text-2xl font-bold text-[oklch(0.54_0.10_210)]">{c.pct}%</p>
+                  <p className="text-2xl font-bold text-primary">{c.pct}%</p>
                   <p className="text-xs text-muted-foreground">dos turistas consideraram</p>
                 </div>
               ))}

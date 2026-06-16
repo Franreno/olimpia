@@ -17,7 +17,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
 
 const CAT_SHORT: Record<string, string> = {
   meios_hospedagem: "Hospedagem",
@@ -76,52 +78,45 @@ export default function InventarioPage() {
         </div>
 
         {/* Filter chips */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">Categoria:</span>
-          {categorias.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() =>
-                setCatFilter(catFilter === cat.id ? undefined : cat.id)
-              }
-              className={cn(
-                "rounded-full border px-3 py-0.5 text-xs transition-colors",
-                catFilter === cat.id
-                  ? "border-primary bg-primary/10 text-primary font-semibold"
-                  : "border-border bg-background text-foreground hover:bg-muted"
-              )}
-            >
-              {CAT_SHORT[cat.slug] ?? cat.nome}
-            </button>
-          ))}
-          <div className="mx-1 h-4 w-px bg-border" />
+          <ToggleGroup
+            value={catFilter !== undefined ? [String(catFilter)] : []}
+            onValueChange={(v: string[]) =>
+              setCatFilter(v[0] ? Number(v[0]) : undefined)
+            }
+            variant="outline"
+            size="sm"
+            className="flex flex-wrap"
+          >
+            {categorias.map((cat) => (
+              <ToggleGroupItem key={cat.id} value={String(cat.id)}>
+                {CAT_SHORT[cat.slug] ?? cat.nome}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <Separator orientation="vertical" className="mx-1 h-4" />
           <span className="text-xs text-muted-foreground">Status:</span>
-          {["ativo", "inativo"].map((s) => (
-            <button
-              key={s}
-              onClick={() =>
-                setStatusFilter(statusFilter === s ? undefined : s)
-              }
-              className={cn(
-                "rounded-full border px-3 py-0.5 text-xs transition-colors",
-                statusFilter === s
-                  ? "border-primary bg-primary/10 text-primary font-semibold"
-                  : "border-border bg-background text-foreground hover:bg-muted"
-              )}
-            >
-              {s === "ativo" ? "Ativo" : "Inativo"}
-            </button>
-          ))}
+          <ToggleGroup
+            value={statusFilter ? [statusFilter] : []}
+            onValueChange={(v: string[]) => setStatusFilter(v[0])}
+            variant="outline"
+            size="sm"
+          >
+            <ToggleGroupItem value="ativo">Ativo</ToggleGroupItem>
+            <ToggleGroupItem value="inativo">Inativo</ToggleGroupItem>
+          </ToggleGroup>
           {hasFilters && (
-            <button
+            <Button
+              variant="link"
+              size="sm"
               onClick={() => {
                 setCatFilter(undefined);
                 setStatusFilter(undefined);
               }}
-              className="text-xs text-primary underline"
             >
               Limpar filtros
-            </button>
+            </Button>
           )}
         </div>
 
@@ -183,7 +178,7 @@ export default function InventarioPage() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-[#E8F4F8] text-[#2E86AB] border-transparent hover:bg-[#E8F4F8]">
+                        <Badge variant="secondary">
                           {CAT_SHORT[
                             categorias.find((c) => c.id === emp.categoria_id)
                               ?.slug ?? ""
@@ -240,11 +235,12 @@ export default function InventarioPage() {
                   ))}
               {!isLoading && empresas.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    Nenhum estabelecimento encontrado
+                  <TableCell colSpan={5}>
+                    <Empty>
+                      <EmptyHeader>
+                        <EmptyTitle>Nenhum estabelecimento encontrado</EmptyTitle>
+                      </EmptyHeader>
+                    </Empty>
                   </TableCell>
                 </TableRow>
               )}
