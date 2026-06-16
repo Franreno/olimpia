@@ -5,11 +5,23 @@ import { useState } from "react";
 import { DownloadIcon, ClipboardListIcon, FileSpreadsheetIcon } from "lucide-react";
 import { useIndicadores, downloadExport } from "@/lib/queries";
 import { PARQUE_LABELS, type Parque } from "@/lib/types";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import type { SerieNpsItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const npsChartConfig = {
+  nps: { label: "NPS", color: "var(--primary)" },
+} satisfies ChartConfig;
 
 const PARK_TABS: Parque[] = ["thermas", "rubio"];
 
@@ -236,53 +248,61 @@ function StatCard({
   );
 }
 
-function NpsChart({ serie }: { serie: { mes: string; nps: number }[] }) {
+function NpsChart({ serie }: { serie: SerieNpsItem[] }) {
   if (serie.length === 0) {
     return <p className="text-sm text-muted-foreground">Sem dados ainda.</p>;
   }
-  const W = 480;
-  const H = 100;
-  const min = 0;
-  const max = 100;
-  const pts = serie.map((m, i) => {
-    const x = (i / Math.max(serie.length - 1, 1)) * W;
-    const y = H - ((m.nps - min) / (max - min)) * H;
-    return { x, y, ...m };
-  });
-  const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-  const areaD = `${pathD} L ${pts[pts.length - 1].x} ${H} L 0 ${H} Z`;
 
   return (
-    <div className="overflow-x-auto">
-      <svg width="100%" viewBox={`0 0 ${W} ${H + 24}`} className="block">
-        {[20, 40, 60, 80].map((v) => {
-          const y = H - ((v - min) / (max - min)) * H;
-          return (
-            <g key={v}>
-              <line x1="0" y1={y} x2={W} y2={y} stroke="currentColor" className="text-muted" strokeWidth="1" />
-              <text x="0" y={y - 3} fontSize="9" className="fill-muted-foreground">
-                {v}
-              </text>
-            </g>
-          );
-        })}
+    <ChartContainer config={npsChartConfig} className="h-[160px] w-full">
+      <AreaChart accessibilityLayer data={serie} margin={{ left: 0, right: 8, top: 4 }}>
         <defs>
-          <linearGradient id="npsGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
+          <linearGradient id="fillNps" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-nps)" stopOpacity={0.18} />
+            <stop offset="100%" stopColor="var(--color-nps)" stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <path d={areaD} fill="url(#npsGrad)" />
-        <path d={pathD} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {pts.map((p, i) => (
-          <g key={i}>
-            <circle cx={p.x} cy={p.y} r="3" fill="var(--primary)" />
-            <text x={p.x} y={H + 16} textAnchor="middle" fontSize="9" className="fill-muted-foreground">
-              {p.mes.split("/")[0]}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </div>
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="mes"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value: string) => value.split("/")[0]}
+        />
+        <YAxis
+          domain={[0, 100]}
+          ticks={[0, 25, 50, 75, 100]}
+          tickLine={false}
+          axisLine={false}
+          width={40}
+        />
+        <ChartTooltip
+          cursor={false}
+          content={
+            <ChartTooltipContent
+              labelKey="mes"
+              formatter={(value, _name, item) => (
+                <span>
+                  NPS <strong>{value}</strong>
+                  <span className="ml-1 text-muted-foreground">
+                    ({item.payload.respostas} resp.)
+                  </span>
+                </span>
+              )}
+            />
+          }
+        />
+        <Area
+          dataKey="nps"
+          type="monotone"
+          stroke="var(--color-nps)"
+          strokeWidth={2}
+          fill="url(#fillNps)"
+          dot={{ r: 2.5, fill: "var(--color-nps)" }}
+          activeDot={{ r: 4 }}
+        />
+      </AreaChart>
+    </ChartContainer>
   );
 }
