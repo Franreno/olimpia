@@ -1,19 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckIcon,
   TriangleAlertIcon,
   LayoutDashboardIcon,
 } from "lucide-react";
-import { useCidades, useFormularioAtivo, useCreateResposta } from "@/lib/queries";
+import {
+  useCidades,
+  useFormularioAtivo,
+  useCreateResposta,
+  useParques,
+} from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
-import type { Cidade, Parque } from "@/lib/types";
-import { PARQUE_LABELS } from "@/lib/types";
+import type { Cidade } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const PARQUES: Parque[] = ["thermas", "rubio"];
 
 const INCOME_RANGES = [
   "Até R$ 2.000",
@@ -45,9 +47,10 @@ const MOTIVATIONS = [
 export default function FieldFormPage() {
   const { user } = useAuth();
   const { data: formulario } = useFormularioAtivo();
+  const { data: parques = [] } = useParques(true);
   const createResposta = useCreateResposta();
 
-  const [park, setPark] = useState<Parque>("thermas");
+  const [park, setPark] = useState<string>("");
   const [cityQuery, setCityQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState<Cidade | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -61,6 +64,11 @@ export default function FieldFormPage() {
 
   const { data: citySuggestions = [] } = useCidades(cityQuery);
 
+  // default to the first active park once they load
+  useEffect(() => {
+    if (!park && parques.length > 0) setPark(parques[0].slug);
+  }, [parques, park]);
+
   const fator =
     formulario?.schema_json.regras_coerencia?.find(
       (r) => r.tipo === "gasto_vs_renda"
@@ -71,7 +79,7 @@ export default function FieldFormPage() {
     rendaMax !== undefined && gasto !== undefined && gasto > rendaMax * fator;
 
   const canSubmit =
-    !!selectedCity && nights !== "" && spending !== "" && nps !== null;
+    !!park && !!selectedCity && nights !== "" && spending !== "" && nps !== null;
 
   function toggleMotivation(m: string) {
     setMotivations((prev) =>
@@ -185,25 +193,31 @@ export default function FieldFormPage() {
           </div>
         )}
 
-        {/* Park selector */}
+        {/* Park selector (dynamic) */}
         <Field label="Local da pesquisa" required>
-          <div className="grid grid-cols-2 gap-2.5">
-            {PARQUES.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPark(p)}
-                className={cn(
-                  "rounded-xl border-2 px-3 py-4 text-base font-medium transition-all",
-                  park === p
-                    ? "border-primary bg-primary/10 font-bold text-primary"
-                    : "border-border bg-background text-foreground"
-                )}
-              >
-                {PARQUE_LABELS[p]}
-              </button>
-            ))}
-          </div>
+          {parques.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum parque cadastrado. Cadastre um parque em Demanda → Parques.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {parques.map((p) => (
+                <button
+                  key={p.slug}
+                  type="button"
+                  onClick={() => setPark(p.slug)}
+                  className={cn(
+                    "rounded-xl border-2 px-3 py-4 text-base font-medium transition-all",
+                    park === p.slug
+                      ? "border-primary bg-primary/10 font-bold text-primary"
+                      : "border-border bg-background text-foreground"
+                  )}
+                >
+                  {p.nome}
+                </button>
+              ))}
+            </div>
+          )}
         </Field>
 
         {/* Researcher — current logged-in user (read-only) */}

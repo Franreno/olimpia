@@ -64,7 +64,24 @@ export type EmpresaStatus = "ativo" | "inativo";
 
 // ── Módulo 2 — Pesquisa de Demanda ───────────────────────────────────────────
 
-export type Parque = "thermas" | "rubio" | "hot_beach" | "dolce_dulce";
+export interface Parque {
+  id: number;
+  slug: string;
+  nome: string;
+  ativo: boolean;
+  ordem: number;
+}
+
+export interface ParqueCreate {
+  nome: string;
+  ordem?: number;
+}
+
+export interface ParqueUpdate {
+  nome?: string;
+  ativo?: boolean;
+  ordem?: number;
+}
 
 export interface Cidade {
   nome: string;
@@ -106,7 +123,7 @@ export interface FormularioVersao {
 }
 
 export interface RespostaDemandaCreate {
-  parque: Parque;
+  parque: string; // Parque.slug
   formulario_versao_id?: number;
   coletado_em?: string;
   estadia?: {
@@ -144,7 +161,7 @@ export interface RespostaDemanda {
   id: string;
   formulario_versao_id: number;
   pesquisador_id: string;
-  parque: Parque;
+  parque: string; // Parque.slug
   coletado_em: string;
   sync_status: string;
   alerta_coerencia: boolean;
@@ -178,10 +195,3 @@ export interface Indicadores {
   destinos_concorrentes: DistribuicaoItem[];
   serie_nps: SerieNpsItem[];
 }
-
-export const PARQUE_LABELS: Record<Parque, string> = {
-  thermas: "Thermas dos Laranjais",
-  rubio: "Rubio Termas",
-  hot_beach: "Hot Beach",
-  dolce_dulce: "Dolce Dulce",
-};

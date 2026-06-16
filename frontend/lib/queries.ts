@@ -11,6 +11,9 @@ import type {
   RespostaDemanda,
   RespostaDemandaCreate,
   Indicadores,
+  Parque,
+  ParqueCreate,
+  ParqueUpdate,
 } from "./types";
 
 // ── Categorias ───────────────────────────────────────────────────────────────
@@ -90,6 +93,37 @@ export function useSoftDeleteEmpresa() {
 }
 
 // ── Módulo 2 — Demanda ────────────────────────────────────────────────────────
+
+export function useParques(apenasAtivos = false) {
+  return useQuery<Parque[]>({
+    queryKey: ["parques", apenasAtivos],
+    queryFn: () =>
+      api
+        .get("/api/v1/demanda/parques", {
+          params: apenasAtivos ? { apenas_ativos: true } : {},
+        })
+        .then((r) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateParque() {
+  const qc = useQueryClient();
+  return useMutation<Parque, Error, ParqueCreate>({
+    mutationFn: (data) =>
+      api.post("/api/v1/demanda/parques", data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["parques"] }),
+  });
+}
+
+export function useUpdateParque() {
+  const qc = useQueryClient();
+  return useMutation<Parque, Error, { id: number; data: ParqueUpdate }>({
+    mutationFn: ({ id, data }) =>
+      api.patch(`/api/v1/demanda/parques/${id}`, data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["parques"] }),
+  });
+}
 
 export function useCidades(q: string) {
   return useQuery<Cidade[]>({

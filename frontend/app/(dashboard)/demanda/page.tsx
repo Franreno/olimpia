@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { DownloadIcon, ClipboardListIcon, FileSpreadsheetIcon } from "lucide-react";
-import { useIndicadores, downloadExport } from "@/lib/queries";
-import { PARQUE_LABELS, type Parque } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { DownloadIcon, ClipboardListIcon, FileSpreadsheetIcon, MapPinIcon } from "lucide-react";
+import { useIndicadores, downloadExport, useParques } from "@/lib/queries";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,8 +21,6 @@ import { cn } from "@/lib/utils";
 const npsChartConfig = {
   nps: { label: "NPS", color: "var(--primary)" },
 } satisfies ChartConfig;
-
-const PARK_TABS: Parque[] = ["thermas", "rubio"];
 
 const UF_NAMES: Record<string, string> = {
   AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia",
@@ -45,9 +42,16 @@ function npsColor(nps: number | null) {
 }
 
 export default function DemandaDashboardPage() {
-  const [park, setPark] = useState<Parque>("thermas");
+  const { data: parques = [] } = useParques(true);
+  const [park, setPark] = useState<string>("");
   const ano = new Date().getFullYear();
-  const { data, isLoading } = useIndicadores(park, ano);
+
+  // default to the first active park once they load
+  useEffect(() => {
+    if (!park && parques.length > 0) setPark(parques[0].slug);
+  }, [parques, park]);
+
+  const { data, isLoading } = useIndicadores(park || undefined, ano);
 
   return (
     <>
@@ -66,6 +70,15 @@ export default function DemandaDashboardPage() {
           <Button
             variant="outline"
             size="sm"
+            render={<Link href="/demanda/parques" />}
+            nativeButton={false}
+          >
+            <MapPinIcon data-icon="inline-start" />
+            Parques
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             render={<Link href="/demanda/versoes" />}
             nativeButton={false}
           >
@@ -77,18 +90,23 @@ export default function DemandaDashboardPage() {
       {/* Park toggle + export */}
       <div className="flex items-center justify-between">
         <div className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
-          {PARK_TABS.map((p) => (
+          {parques.length === 0 && (
+            <span className="px-2 py-1 text-sm text-muted-foreground">
+              Nenhum parque cadastrado
+            </span>
+          )}
+          {parques.map((p) => (
             <button
-              key={p}
-              onClick={() => setPark(p)}
+              key={p.slug}
+              onClick={() => setPark(p.slug)}
               className={cn(
                 "rounded-md px-3.5 py-1.5 text-sm transition-all",
-                park === p
+                park === p.slug
                   ? "bg-background font-semibold text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {PARQUE_LABELS[p]}
+              {p.nome}
             </button>
           ))}
         </div>
