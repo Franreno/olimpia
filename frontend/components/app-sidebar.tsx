@@ -6,10 +6,6 @@ import {
   LayoutGridIcon,
   BarChart2Icon,
   PercentIcon,
-  TagIcon,
-  GlobeIcon,
-  LayoutIcon,
-  SettingsIcon,
   LogOutIcon,
 } from "lucide-react";
 import {
@@ -18,12 +14,13 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -33,11 +30,35 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
+import { DEMANDA_NAV, demandaHomeForRole, type Perfil } from "@/lib/nav";
 
-const NAV_MODULES = [
-  { href: "/inventario", label: "Inventário Turístico", icon: LayoutGridIcon },
-  { href: "/demanda", label: "Pesquisa de Demanda", icon: BarChart2Icon },
-  { href: "/ocupacao", label: "Taxa de Ocupação", icon: PercentIcon },
+type NavModule = {
+  href: string;
+  label: string;
+  icon: typeof LayoutGridIcon;
+  /** Roles allowed to see this module. */
+  roles: Perfil[];
+};
+
+const NAV_MODULES: NavModule[] = [
+  {
+    href: "/inventario",
+    label: "Inventário Turístico",
+    icon: LayoutGridIcon,
+    roles: ["admin", "editor", "gestor"],
+  },
+  {
+    href: "/demanda",
+    label: "Pesquisa de Demanda",
+    icon: BarChart2Icon,
+    roles: ["admin", "editor", "gestor", "pesquisador"],
+  },
+  {
+    href: "/ocupacao",
+    label: "Taxa de Ocupação",
+    icon: PercentIcon,
+    roles: ["admin", "editor", "gestor"],
+  },
 ];
 
 function initials(nome: string) {
@@ -60,6 +81,10 @@ export function AppSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const router = useRouter();
+  const perfil = user?.perfil;
+  const modules = perfil
+    ? NAV_MODULES.filter((m) => m.roles.includes(perfil))
+    : [];
 
   async function handleLogout() {
     await logout();
@@ -88,18 +113,48 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_MODULES.map(({ href, label, icon: Icon }) => (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    render={<Link href={href} />}
-                    isActive={pathname.startsWith(href)}
-                    tooltip={label}
-                  >
-                    <Icon />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {modules.map(({ href, label, icon: Icon }) => {
+                const sectionActive = pathname.startsWith(href);
+                const isDemanda = href === "/demanda";
+                // Land each persona on the right Demanda sub-page.
+                const parentHref =
+                  isDemanda && perfil ? demandaHomeForRole(perfil) : href;
+                const subItems =
+                  isDemanda && perfil
+                    ? DEMANDA_NAV.filter((i) => i.roles.includes(perfil))
+                    : [];
+
+                return (
+                  <SidebarMenuItem key={href}>
+                    <SidebarMenuButton
+                      render={<Link href={parentHref} />}
+                      isActive={sectionActive}
+                      tooltip={label}
+                    >
+                      <Icon />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                    {sectionActive && subItems.length > 0 && (
+                      <SidebarMenuSub>
+                        {subItems.map((item) => (
+                          <SidebarMenuSubItem key={item.href}>
+                            <SidebarMenuSubButton
+                              render={<Link href={item.href} />}
+                              isActive={
+                                item.href === "/demanda"
+                                  ? pathname === "/demanda"
+                                  : pathname.startsWith(item.href)
+                              }
+                            >
+                              <span>{item.label}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

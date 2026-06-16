@@ -26,6 +26,7 @@ const SECTION_LABELS: Record<string, string> = {
 const SUBSECTION_LABELS: Record<string, string> = {
   novo: "Novo estabelecimento",
   editar: "Editar",
+  coletas: "Coletas de campo",
   versoes: "Versões do formulário",
   parques: "Parques",
   formulario: "Formulário de campo",

@@ -22,7 +22,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
 }
 
@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAccessToken(r.data.access_token);
     const me = await api.get<AuthUser>("/api/v1/auth/me");
     setState({ user: me.data, isLoading: false });
+    return me.data;
   }, []);
 
   const logout = useCallback(async () => {

@@ -176,6 +176,7 @@ export function useCreateResposta() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["indicadores"] });
       qc.invalidateQueries({ queryKey: ["formularios"] });
+      qc.invalidateQueries({ queryKey: ["respostas"] });
     },
   });
 }
@@ -186,6 +187,18 @@ export function useIndicadores(parque?: string, ano?: number) {
     queryFn: () =>
       api
         .get("/api/v1/demanda/indicadores", {
+          params: { ...(parque && { parque }), ...(ano && { ano }) },
+        })
+        .then((r) => r.data),
+  });
+}
+
+export function useRespostas(parque?: string, ano?: number) {
+  return useQuery<RespostaDemanda[]>({
+    queryKey: ["respostas", parque, ano],
+    queryFn: () =>
+      api
+        .get("/api/v1/demanda/respostas", {
           params: { ...(parque && { parque }), ...(ano && { ano }) },
         })
         .then((r) => r.data),

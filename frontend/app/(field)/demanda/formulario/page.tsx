@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CheckIcon, TriangleAlertIcon, LayoutDashboardIcon } from "lucide-react";
+import { CheckIcon, TriangleAlertIcon, ListChecksIcon } from "lucide-react";
 import {
   useCidades,
   useFormularioAtivo,
@@ -137,7 +137,14 @@ export default function FieldFormPage() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button onClick={resetForm}>Novo formulário</Button>
+            <Button onClick={resetForm}>Nova coleta</Button>
+            <Button
+              variant="outline"
+              render={<Link href="/demanda/coletas" />}
+              nativeButton={false}
+            >
+              Ver coletas
+            </Button>
           </EmptyContent>
         </Empty>
       </div>
@@ -158,11 +165,11 @@ export default function FieldFormPage() {
         </div>
         <div className="flex items-center gap-4">
           <Link
-            href="/demanda"
+            href="/demanda/coletas"
             className="flex items-center gap-1.5 text-xs text-white/80 hover:text-white"
           >
-            <LayoutDashboardIcon className="size-4" />
-            Resultados
+            <ListChecksIcon className="size-4" />
+            Coletas
           </Link>
           <span className="text-[13px] text-white/70">
             {new Date().toLocaleDateString("pt-BR")}

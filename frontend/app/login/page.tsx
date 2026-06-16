@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { homeForRole } from "@/lib/nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,8 +24,8 @@ export default function LoginPage() {
     setError(null);
     setIsPending(true);
     try {
-      await login(email, password);
-      router.replace("/inventario");
+      const user = await login(email, password);
+      router.replace(homeForRole(user.perfil));
     } catch {
       setError("E-mail ou senha inválidos.");
     } finally {

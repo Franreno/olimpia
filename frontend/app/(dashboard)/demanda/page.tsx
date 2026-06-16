@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
-import { DownloadIcon, ClipboardListIcon, FileSpreadsheetIcon, MapPinIcon } from "lucide-react";
+import { DownloadIcon, FileSpreadsheetIcon } from "lucide-react";
 import { useIndicadores, downloadExport, useParques } from "@/lib/queries";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -56,36 +55,12 @@ export default function DemandaDashboardPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Pesquisa de Demanda</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href="/demanda/formulario" />}
-            nativeButton={false}
-          >
-            <ClipboardListIcon data-icon="inline-start" />
-            Formulário de campo
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href="/demanda/parques" />}
-            nativeButton={false}
-          >
-            <MapPinIcon data-icon="inline-start" />
-            Parques
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href="/demanda/versoes" />}
-            nativeButton={false}
-          >
-            Versões
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-xl font-semibold">Resultados da Demanda</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Indicadores consolidados por parque. Use a barra lateral para coletas,
+          versões e parques.
+        </p>
       </div>
 
       {/* Park toggle + export */}
