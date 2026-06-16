@@ -13,7 +13,7 @@ import type { Cidade, Parque } from "@/lib/types";
 import { PARQUE_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const PARQUES: Parque[] = ["thermas", "rubio", "hot_beach", "dolce_dulce"];
+const PARQUES: Parque[] = ["thermas", "rubio"];
 
 const INCOME_RANGES = [
   "Até R$ 2.000",
@@ -148,24 +148,21 @@ export default function FieldFormPage() {
             Pesquisa de Demanda Turística
           </span>
         </div>
-        <Link
-          href="/demanda"
-          className="flex items-center gap-1.5 text-xs text-white/80 hover:text-white"
-        >
-          <LayoutDashboardIcon className="size-4" />
-          Resultados
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/demanda"
+            className="flex items-center gap-1.5 text-xs text-white/80 hover:text-white"
+          >
+            <LayoutDashboardIcon className="size-4" />
+            Resultados
+          </Link>
+          <span className="text-[13px] text-white/70">
+            {new Date().toLocaleDateString("pt-BR")}
+          </span>
+        </div>
       </div>
 
       <div className="mx-auto max-w-2xl px-4 pb-16 pt-6">
-        <p className="mb-5 text-sm text-muted-foreground">
-          Pesquisador(a):{" "}
-          <span className="font-medium text-foreground">{user?.nome}</span>
-          {formulario && (
-            <span className="ml-2 text-xs">· Formulário {formulario.ano}</span>
-          )}
-        </p>
-
         {error && (
           <div className="mb-5 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {error}
@@ -206,6 +203,18 @@ export default function FieldFormPage() {
                 {PARQUE_LABELS[p]}
               </button>
             ))}
+          </div>
+        </Field>
+
+        {/* Researcher — current logged-in user (read-only) */}
+        <Field label="Pesquisador(a)" required>
+          <div className="flex items-center justify-between rounded-lg border-[1.5px] border-border bg-muted/40 px-3.5 py-3 text-base">
+            <span className="font-medium text-foreground">{user?.nome ?? "—"}</span>
+            {formulario && (
+              <span className="text-xs text-muted-foreground">
+                Formulário {formulario.ano}
+              </span>
+            )}
           </div>
         </Field>
 

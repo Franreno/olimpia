@@ -11,7 +11,19 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-const PARK_TABS: Parque[] = ["thermas", "rubio", "hot_beach", "dolce_dulce"];
+const PARK_TABS: Parque[] = ["thermas", "rubio"];
+
+const UF_NAMES: Record<string, string> = {
+  AC: "Acre", AL: "Alagoas", AP: "Amapá", AM: "Amazonas", BA: "Bahia",
+  CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás",
+  MA: "Maranhão", MT: "Mato Grosso", MS: "Mato Grosso do Sul", MG: "Minas Gerais",
+  PA: "Pará", PB: "Paraíba", PR: "Paraná", PE: "Pernambuco", PI: "Piauí",
+  RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RS: "Rio Grande do Sul",
+  RO: "Rondônia", RR: "Roraima", SC: "Santa Catarina", SP: "São Paulo",
+  SE: "Sergipe", TO: "Tocantins",
+};
+
+const ufLabel = (uf: string) => UF_NAMES[uf] ?? uf;
 
 function npsColor(nps: number | null) {
   if (nps === null) return "text-muted-foreground";
@@ -37,7 +49,7 @@ export default function DemandaDashboardPage() {
             nativeButton={false}
           >
             <ClipboardListIcon data-icon="inline-start" />
-            Novo formulário
+            Formulário de campo
           </Button>
           <Button
             variant="outline"
@@ -133,7 +145,7 @@ export default function DemandaDashboardPage() {
         <Card>
           <CardContent className="p-4">
             <p className="mb-4 text-sm font-semibold">
-              Evolução do NPS — últimos 12 meses
+              Evolução do NPS últimos 12 meses
             </p>
             {isLoading ? (
               <Skeleton className="h-32 w-full" />
@@ -146,20 +158,24 @@ export default function DemandaDashboardPage() {
         {/* Top origin states */}
         <Card>
           <CardContent className="p-4">
-            <p className="mb-4 text-sm font-semibold">Principais mercados emissores</p>
+            <p className="mb-4 text-sm font-semibold">Top 5 estados de origem</p>
             {(data?.mercados_emissores ?? []).length === 0 && !isLoading && (
               <p className="text-sm text-muted-foreground">Sem dados ainda.</p>
             )}
             {(data?.mercados_emissores ?? []).map((m, i) => (
               <div key={m.rotulo} className="mb-3">
                 <div className="mb-1 flex justify-between text-sm">
-                  <span className="text-foreground/80">{m.rotulo}</span>
+                  <span className="text-foreground/80">{ufLabel(m.rotulo)}</span>
                   <span className="font-semibold text-primary">{m.pct}%</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted">
                   <div
-                    className={cn("h-full rounded-full", i === 0 ? "bg-primary" : "bg-accent-foreground/70")}
-                    style={{ width: `${m.pct}%` }}
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${m.pct}%`,
+                      backgroundColor: i === 0 ? "var(--primary)" : "oklch(0.54 0.10 210)",
+                      opacity: 1 - i * 0.12,
+                    }}
                   />
                 </div>
               </div>

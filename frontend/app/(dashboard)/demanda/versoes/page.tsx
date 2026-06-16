@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeftIcon, TriangleAlertIcon, EyeIcon, LockIcon, CircleIcon } from "lucide-react";
-import { useFormularios } from "@/lib/queries";
+import { ArrowLeftIcon, TriangleAlertIcon, EyeIcon, LockIcon, CircleIcon, PlusIcon } from "lucide-react";
+import { useFormularios, useCreateFormulario } from "@/lib/queries";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,15 @@ import { cn } from "@/lib/utils";
 
 export default function FormVersionsPage() {
   const { data: versoes = [], isLoading } = useFormularios();
+  const { user } = useAuth();
+  const createFormulario = useCreateFormulario();
   const proximoAno = new Date().getFullYear() + 1;
+  const podeEditar = user?.perfil === "admin" || user?.perfil === "editor";
+  const proximoExiste = versoes.some((v) => v.ano === proximoAno);
+
+  function prepararProximaVersao(schema: (typeof versoes)[number]["schema_json"]) {
+    createFormulario.mutate({ ano: proximoAno, schema_json: schema });
+  }
 
   return (
     <>
@@ -65,7 +74,9 @@ export default function FormVersionsPage() {
         )}
 
         {versoes.map((v) => {
-          const ativo = v.status === "ativo";
+          const anoAtual = new Date().getFullYear();
+          const ativo = v.ano === anoAtual && v.status === "ativo";
+          const emPreparacao = v.ano > anoAtual;
           return (
             <Card
               key={v.id}
@@ -80,15 +91,19 @@ export default function FormVersionsPage() {
                         "gap-1 border-transparent",
                         ativo
                           ? "bg-success/15 text-success"
-                          : "bg-muted text-muted-foreground"
+                          : emPreparacao
+                            ? "bg-accent text-accent-foreground"
+                            : "bg-muted text-muted-foreground"
                       )}
                     >
                       {ativo ? (
                         <CircleIcon className="size-2 fill-current" />
+                      ) : emPreparacao ? (
+                        <PlusIcon className="size-3" />
                       ) : (
                         <LockIcon className="size-3" />
                       )}
-                      {ativo ? "Ativo" : "Bloqueado"}
+                      {ativo ? "Ativo" : emPreparacao ? "Em preparação" : "Bloqueado"}
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
@@ -106,10 +121,25 @@ export default function FormVersionsPage() {
                     )}
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" disabled>
-                  <EyeIcon data-icon="inline-start" />
-                  Ver formulário
-                </Button>
+                <div className="flex shrink-0 gap-2">
+                  <Button variant="ghost" size="sm" disabled>
+                    <EyeIcon data-icon="inline-start" />
+                    Ver formulário
+                  </Button>
+                  {ativo && podeEditar && !proximoExiste && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={createFormulario.isPending}
+                      onClick={() => prepararProximaVersao(v.schema_json)}
+                    >
+                      <PlusIcon data-icon="inline-start" />
+                      {createFormulario.isPending
+                        ? "Preparando…"
+                        : `Preparar versão ${proximoAno}`}
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           );

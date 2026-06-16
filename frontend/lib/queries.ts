@@ -119,6 +119,21 @@ export function useFormularios() {
   });
 }
 
+export function useCreateFormulario() {
+  const qc = useQueryClient();
+  return useMutation<
+    FormularioVersao,
+    Error,
+    { ano: number; schema_json: FormularioVersao["schema_json"] }
+  >({
+    mutationFn: (data) =>
+      api.post("/api/v1/demanda/formularios", data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["formularios"] });
+    },
+  });
+}
+
 export function useCreateResposta() {
   const qc = useQueryClient();
   return useMutation<RespostaDemanda, Error, RespostaDemandaCreate>({
