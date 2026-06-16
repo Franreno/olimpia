@@ -25,6 +25,7 @@ const SECTION_LABELS: Record<string, string> = {
 const SUBSECTION_LABELS: Record<string, string> = {
   novo: "Novo estabelecimento",
   editar: "Editar",
+  versoes: "Versões do formulário",
 };
 
 function initials(nome: string) {

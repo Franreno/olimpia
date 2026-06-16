@@ -6,6 +6,11 @@ import type {
   EmpresaUpdate,
   CategoriaEmpresa,
   AuditLog,
+  Cidade,
+  FormularioVersao,
+  RespostaDemanda,
+  RespostaDemandaCreate,
+  Indicadores,
 } from "./types";
 
 // ── Categorias ───────────────────────────────────────────────────────────────
@@ -82,4 +87,78 @@ export function useSoftDeleteEmpresa() {
       qc.invalidateQueries({ queryKey: ["empresas"] });
     },
   });
+}
+
+// ── Módulo 2 — Demanda ────────────────────────────────────────────────────────
+
+export function useCidades(q: string) {
+  return useQuery<Cidade[]>({
+    queryKey: ["cidades", q],
+    queryFn: () =>
+      api
+        .get("/api/v1/demanda/cidades", { params: { q } })
+        .then((r) => r.data),
+    enabled: q.trim().length >= 2,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useFormularioAtivo() {
+  return useQuery<FormularioVersao>({
+    queryKey: ["formulario-ativo"],
+    queryFn: () =>
+      api.get("/api/v1/demanda/formularios/ativo").then((r) => r.data),
+    retry: false,
+  });
+}
+
+export function useFormularios() {
+  return useQuery<FormularioVersao[]>({
+    queryKey: ["formularios"],
+    queryFn: () => api.get("/api/v1/demanda/formularios").then((r) => r.data),
+  });
+}
+
+export function useCreateResposta() {
+  const qc = useQueryClient();
+  return useMutation<RespostaDemanda, Error, RespostaDemandaCreate>({
+    mutationFn: (data) =>
+      api.post("/api/v1/demanda/respostas", data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["indicadores"] });
+      qc.invalidateQueries({ queryKey: ["formularios"] });
+    },
+  });
+}
+
+export function useIndicadores(parque?: string, ano?: number) {
+  return useQuery<Indicadores>({
+    queryKey: ["indicadores", parque, ano],
+    queryFn: () =>
+      api
+        .get("/api/v1/demanda/indicadores", {
+          params: { ...(parque && { parque }), ...(ano && { ano }) },
+        })
+        .then((r) => r.data),
+  });
+}
+
+export async function downloadExport(
+  formato: "xlsx" | "csv",
+  parque?: string,
+  ano?: number
+) {
+  const res = await api.get("/api/v1/demanda/export", {
+    params: { formato, ...(parque && { parque }), ...(ano && { ano }) },
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const a = document.createElement("a");
+  a.href = url;
+  const sufixo = parque ? `${parque}_${ano ?? ""}` : `${ano ?? ""}`;
+  a.download = `demanda_${sufixo}.${formato}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
 }

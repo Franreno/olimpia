@@ -61,3 +61,127 @@ export interface AuditLog {
 }
 
 export type EmpresaStatus = "ativo" | "inativo";
+
+// ── Módulo 2 — Pesquisa de Demanda ───────────────────────────────────────────
+
+export type Parque = "thermas" | "rubio" | "hot_beach" | "dolce_dulce";
+
+export interface Cidade {
+  nome: string;
+  uf: string;
+}
+
+export interface CampoFormulario {
+  id: string;
+  label: string;
+  tipo: "selecao" | "autocomplete" | "numero" | "multipla" | "escala";
+  obrigatorio?: boolean;
+  fonte?: string;
+  min?: number;
+  max?: number;
+  opcoes?: Array<{ valor: string; rotulo: string }> | string[];
+}
+
+export interface RegraCoerencia {
+  campo: string;
+  tipo: string;
+  fator?: number;
+  alerta: string;
+}
+
+export interface FormularioSchema {
+  campos: CampoFormulario[];
+  regras_coerencia?: RegraCoerencia[];
+}
+
+export interface FormularioVersao {
+  id: number;
+  ano: number;
+  schema_json: FormularioSchema;
+  status: "ativo" | "travado";
+  criado_em: string;
+  criado_por?: string;
+  criado_por_nome?: string | null;
+  total_respostas: number;
+}
+
+export interface RespostaDemandaCreate {
+  parque: Parque;
+  formulario_versao_id?: number;
+  coletado_em?: string;
+  estadia?: {
+    estado_residencia?: string;
+    cidade_residencia?: string;
+    data_chegada?: string;
+    data_partida?: string;
+    pernoites?: number;
+    meio_hospedagem?: string;
+    acompanhantes_tipo?: string;
+  };
+  viagem?: {
+    motivo_viagem?: string[];
+    transporte_utilizado?: string;
+    considerou_outro_destino?: boolean;
+    destinos_concorrentes?: string[];
+  };
+  satisfacao?: {
+    voltaria?: boolean;
+    indicaria?: boolean;
+    nps_recomendacao?: number;
+    nota_destino?: number;
+  };
+  perfil?: {
+    genero?: string;
+    faixa_etaria?: string;
+    renda_familiar?: string;
+    gasto_medio_diario?: string;
+  };
+  avaliacoes_servico?: Array<{ dimensao: string; nota?: number }>;
+  avaliacoes_atrativo?: Array<{ nome_atrativo: string; nota?: number }>;
+}
+
+export interface RespostaDemanda {
+  id: string;
+  formulario_versao_id: number;
+  pesquisador_id: string;
+  parque: Parque;
+  coletado_em: string;
+  sync_status: string;
+  alerta_coerencia: boolean;
+  descricao_alerta?: string | null;
+}
+
+export interface DistribuicaoItem {
+  rotulo: string;
+  quantidade: number;
+  pct: number;
+}
+
+export interface SerieNpsItem {
+  mes: string;
+  nps: number;
+  respostas: number;
+}
+
+export interface Indicadores {
+  parque: string | null;
+  ano: number;
+  total_respostas: number;
+  nps: number | null;
+  nps_label: string | null;
+  promotores: number;
+  neutros: number;
+  detratores: number;
+  media_pernoites: number | null;
+  ticket_medio: number | null;
+  mercados_emissores: DistribuicaoItem[];
+  destinos_concorrentes: DistribuicaoItem[];
+  serie_nps: SerieNpsItem[];
+}
+
+export const PARQUE_LABELS: Record<Parque, string> = {
+  thermas: "Thermas dos Laranjais",
+  rubio: "Rubio Termas",
+  hot_beach: "Hot Beach",
+  dolce_dulce: "Dolce Dulce",
+};
