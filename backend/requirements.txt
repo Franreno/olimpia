@@ -13,6 +13,7 @@ celery==5.4.0
 redis==5.2.1
 python-multipart==0.0.20
 httpx==0.28.1
+openpyxl==3.1.5
 
 # testing (TDD)
 pytest==8.3.4
