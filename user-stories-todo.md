@@ -39,24 +39,29 @@ Sprint mapping follows `CLAUDE.md` §9. This file is updated as each sprint land
 
 | ID | História | Prioridade | Status | Notes |
 |---|---|---|---|---|
-| 1.6 | Alterar leitos recalcula peso ponderado | Obrigatório | not started | depends on M3 Celery worker (Sprint 4) |
+| 1.6 | Alterar leitos recalcula peso ponderado | Obrigatório | not started | Sprint 4 (M3). Recálculo **síncrono** na mesma transação da escrita — sem Celery (agregado simples `SUM(taxa*leitos)/SUM(leitos)` sobre as respostas do período) |
 | 1.7 | Registrar quais estabelecimentos participam de cada pesquisa | Obrigatório | not started | `respondente_pesquisa` model exists (Sprint 1 migration) — sem CRUD/API nem painel de respondentes na UI |
 | 1.8 | Numeração protocolar automática (XXX/AA) | Importante | not started | |
 | 1.9 | Importar base Excel existente na migração inicial | Obrigatório | not started | seed/import script — partial pattern established via seed.py |
 
 ## Module 2 — Pesquisa de Demanda Turística (Sprint 3)
 
+> **Decisão (2026-06-16):** este passo entrega o M2 **sem PWA/offline**. O formulário de campo
+> submete online. 2.1 fica adiado (não cancelado). Export: Excel + CSV agora, PDF adiado até o
+> template oficial do OTO (CLAUDE.md §10). Autocomplete de cidade usa lista completa do IBGE
+> (~5.570 municípios) buscada no seed e servida por endpoint do backend.
+
 | ID | História | Prioridade | Status | Notes |
 |---|---|---|---|---|
-| 2.1 | Formulário offline no tablet, sync ao reconectar | Obrigatório | not started | PWA + IndexedDB |
-| 2.2 | Autocomplete de cidade (dicionário IBGE) | Obrigatório | not started | |
-| 2.3 | Alerta gasto incompatível com renda | Obrigatório | not started | `formulario_versao.schema_json.regras_coerencia` |
-| 2.4 | Seleção obrigatória de parque | Obrigatório | not started | `resposta_demanda.parque NOT NULL` |
-| 2.5 | Formulário versionado por ano e travado | Obrigatório | not started | `formulario_versao.status` |
-| 2.6 | NPS calculado automaticamente | Obrigatório | not started | `(%promotores - %detratores)` |
-| 2.7 | Pernoites médios, ticket médio, mercados emissores automáticos | Obrigatório | not started | |
-| 2.8 | Visualizar resultados por período/parque com gráficos | Obrigatório | not started | |
-| 2.9 | Exportar resultados em Excel e PDF | Obrigatório | not started | |
+| 2.1 | Formulário offline no tablet, sync ao reconectar | Obrigatório | **deferred** | PWA + IndexedDB — adiado por decisão de 2026-06-16; formulário online entregue primeiro |
+| 2.2 | Autocomplete de cidade (dicionário IBGE) | Obrigatório | **verified** | 5.571 municípios IBGE em `app/data/ibge_municipios.json` (regen via `python -m app.db.seed --refresh-ibge`); `GET /demanda/cidades?q=` busca acento-insensível (prefixo→substring); UI no formulário de campo — smoke-tested |
+| 2.3 | Alerta gasto incompatível com renda | Obrigatório | **verified** | config-driven `schema_json.regras_coerencia` (`tipo=gasto_vs_renda`, `fator`); backend grava `alerta_coerencia`+`descricao_alerta`; UI mostra aviso ao vivo — smoke-tested |
+| 2.4 | Seleção obrigatória de parque | Obrigatório | **verified** | `parque NOT NULL` + CHECK; 422 sem parque; seletor obrigatório na UI — smoke-tested |
+| 2.5 | Formulário versionado por ano e travado | Obrigatório | **done** | `GET/POST /demanda/formularios`; nova versão só `ano_atual+1`; tela "Versões do formulário" (ativo/bloqueado). Pendente UI: "Ver formulário" e "Preparar versão 2027" |
+| 2.6 | NPS calculado automaticamente | Obrigatório | **verified** | `(%prom 9-10 - %detr 0-6)*100`; por parque; série mensal 12m — smoke-tested |
+| 2.7 | Pernoites médios, ticket médio, mercados emissores automáticos | Obrigatório | **verified** | `GET /demanda/indicadores` — média pernoites, ticket (gasto×pernoites), top estados emissores, top destinos concorrentes — smoke-tested |
+| 2.8 | Visualizar resultados por período/parque com gráficos | Obrigatório | **verified** | `/demanda` — abas por parque, stat cards, gráfico SVG de evolução do NPS, barras de mercados, cards de concorrentes — smoke-tested |
+| 2.9 | Exportar resultados em Excel e PDF | Obrigatório | **done (PDF adiado)** | `GET /demanda/export?formato=xlsx\|csv` (openpyxl + CSV com BOM p/ Power BI); botões Excel/CSV na UI. **PDF adiado** até template do OTO (CLAUDE.md §10) |
 
 ## Module 3 — Taxa de Ocupação Hoteleira (Sprint 4)
 
@@ -65,7 +70,7 @@ Sprint mapping follows `CLAUDE.md` §9. This file is updated as each sprint land
 | 3.1 | Criar períodos consolidado ou expectativa | Obrigatório | not started | |
 | 3.2 | Novo período herda estabelecimentos ativos do inventário | Obrigatório | not started | |
 | 3.3 | Alerta ao criar expectativa em feriado de fim de semana | Importante | not started | |
-| 3.4 | Taxa ponderada calculada automaticamente por leitos | Obrigatório | not started | Celery `recalcular_resultado` |
+| 3.4 | Taxa ponderada calculada automaticamente por leitos | Obrigatório | not started | Recálculo **síncrono** na criação/edição de `resposta_ocupacao` (sem Celery) |
 | 3.5 | Receita turística estimada calculada automaticamente | Obrigatório | not started | |
 | 3.6 | Ver quem respondeu / pendente / nunca responde | Obrigatório | not started | |
 | 3.7 | Comparar taxa de ocupação com períodos de anos anteriores | Importante | not started | |
@@ -82,7 +87,8 @@ Sprint mapping follows `CLAUDE.md` §9. This file is updated as each sprint land
 | ID | História | Prioridade | Status | Notes |
 |---|---|---|---|---|
 | 5.1 | Acesso via browser, sem instalação | Obrigatório | **done** | Next.js 16 + shadcn frontend — builds cleanly, routes /login /inventario /inventario/[id] /inventario/[id]/editar /inventario/novo |
-| 5.2 | Formulário otimizado para toque em tablet | Obrigatório | not started | Sprint 3 |
+| 5.2 | Formulário otimizado para toque em tablet | Obrigatório | **done** | Formulário de campo full-screen em grupo de rota `(field)` (sem sidebar), alvos de toque grandes, layout responsivo |
+| 5.5 | Criar novos tipos de pesquisa sem developer | Obrigatório | **partial** | `formulario_versao.schema_json` define campos+regras; backend versiona/trava e usa as regras de coerência. Pendente: editor visual de schema na UI (hoje a versão do próximo ano é criada via API) |
 | 5.4 | Backup automático diário, rollback de 30 dias | Obrigatório | not started | infra-level — TBD with TI da Prefeitura |
 | 5.5 | Criar novos tipos de pesquisa sem developer | Obrigatório | not started | config-driven `formulario_versao.schema_json` |
 | 5.6 | Formulário offline com sync ao reconectar | Obrigatório | not started | duplicate of 2.1 |

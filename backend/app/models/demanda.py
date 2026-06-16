@@ -19,8 +19,23 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db.session import Base
 
 STATUS_FORMULARIO = ("ativo", "travado")
-PARQUES = ("thermas", "rubio", "hot_beach", "dolce_dulce")
 SYNC_STATUS = ("pendente", "sincronizado")
+
+
+class Parque(Base):
+    """Pesquisa locations (parks/attractions) — dynamic, managed via the API.
+
+    `resposta_demanda.parque` stores `slug` (immutable); `nome` is editable.
+    """
+
+    __tablename__ = "parque"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    slug: Mapped[str] = mapped_column(String(40), unique=True, nullable=False)
+    nome: Mapped[str] = mapped_column(String(100), nullable=False)
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    ordem: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    criado_em: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
 class FormularioVersao(Base):
@@ -37,12 +52,12 @@ class FormularioVersao(Base):
 
 class RespostaDemanda(Base):
     __tablename__ = "resposta_demanda"
-    __table_args__ = (CheckConstraint(f"parque IN {PARQUES}", name="ck_resposta_demanda_parque"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     formulario_versao_id: Mapped[int] = mapped_column(ForeignKey("formulario_versao.id"), nullable=False)
     pesquisador_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("usuario.id"), nullable=False)
-    parque: Mapped[str] = mapped_column(String(20), nullable=False)
+    # stores Parque.slug; validated against active parks at the API layer (no DB enum)
+    parque: Mapped[str] = mapped_column(String(40), nullable=False)
     coletado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     sync_status: Mapped[str] = mapped_column(String(15), default="sincronizado", server_default="sincronizado")
     alerta_coerencia: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

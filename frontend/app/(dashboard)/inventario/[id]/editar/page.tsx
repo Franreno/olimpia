@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -289,9 +290,7 @@ export default function EditarEstabelecimentoPage() {
           <FieldGroup label="Categoria">
             <div>
               {categoria && (
-                <Badge className="bg-[#E8F4F8] text-[#2E86AB] border-transparent hover:bg-[#E8F4F8]">
-                  {categoria.nome}
-                </Badge>
+                <Badge variant="secondary">{categoria.nome}</Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -301,23 +300,18 @@ export default function EditarEstabelecimentoPage() {
 
           {isHospedagem && (
             <FieldGroup label="Tipo de meio de hospedagem">
-              <div className="flex flex-wrap gap-2">
+              <ToggleGroup
+                value={tipo ? [tipo] : []}
+                onValueChange={(v: string[]) => setTipo(v[0] ?? "")}
+                variant="outline"
+                className="flex flex-wrap"
+              >
                 {HOSPEDAGEM_TIPOS.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTipo(tipo === t ? "" : t)}
-                    className={cn(
-                      "rounded-full border px-4 py-1.5 text-sm transition-all",
-                      tipo === t
-                        ? "border-primary bg-primary/10 text-primary font-semibold"
-                        : "border-border bg-background text-foreground hover:bg-muted"
-                    )}
-                  >
+                  <ToggleGroupItem key={t} value={t}>
                     {t}
-                  </button>
+                  </ToggleGroupItem>
                 ))}
-              </div>
+              </ToggleGroup>
             </FieldGroup>
           )}
         </CardContent>
@@ -376,26 +370,14 @@ export default function EditarEstabelecimentoPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <FieldGroup label="Aceita participar de pesquisas">
-            <div className="flex gap-2">
-              {[
-                { label: "Sim", value: true },
-                { label: "Não", value: false },
-              ].map((opt) => (
-                <button
-                  key={String(opt.value)}
-                  type="button"
-                  onClick={() => setAceitaPesquisas(opt.value)}
-                  className={cn(
-                    "rounded-full border px-4 py-1.5 text-sm transition-all",
-                    aceitaPesquisas === opt.value
-                      ? "border-primary bg-primary/10 text-primary font-semibold"
-                      : "border-border bg-background text-foreground hover:bg-muted"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            <ToggleGroup
+              value={[aceitaPesquisas ? "sim" : "nao"]}
+              onValueChange={(v: string[]) => v[0] && setAceitaPesquisas(v[0] === "sim")}
+              variant="outline"
+            >
+              <ToggleGroupItem value="sim">Sim</ToggleGroupItem>
+              <ToggleGroupItem value="nao">Não</ToggleGroupItem>
+            </ToggleGroup>
           </FieldGroup>
           <div className="grid grid-cols-2 gap-4">
             <FieldGroup label="Responsável">

@@ -207,20 +207,12 @@ class TestModulo2Tables:
         assert resposta.sync_status == "sincronizado"
         assert resposta.alerta_coerencia is False
 
-    def test_rejects_unknown_parque(self, db_session):
-        usuario = make_usuario(db_session, perfil="pesquisador", email="pesq2@oto.test")
-        versao = FormularioVersao(ano=2027, schema_json={"campos": []}, criado_por=usuario.id)
-        db_session.add(versao)
-        db_session.flush()
+    def test_parque_slug_must_be_unique(self, db_session):
+        from app.models.demanda import Parque
 
-        db_session.add(
-            RespostaDemanda(
-                formulario_versao_id=versao.id,
-                pesquisador_id=usuario.id,
-                parque="parque_inexistente",
-                coletado_em="2026-06-01 10:00:00",
-            )
-        )
+        db_session.add(Parque(slug="thermas", nome="Thermas dos Laranjais"))
+        db_session.flush()
+        db_session.add(Parque(slug="thermas", nome="Duplicado"))
 
         with pytest.raises(IntegrityError):
             db_session.flush()

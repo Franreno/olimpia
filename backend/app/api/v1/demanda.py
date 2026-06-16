@@ -13,11 +13,48 @@ from app.schemas.demanda import (
     FormularioVersaoCreate,
     FormularioVersaoOut,
     IndicadoresOut,
+    ParqueCreate,
+    ParqueOut,
+    ParqueUpdate,
     RespostaDemandaCreate,
     RespostaDemandaOut,
 )
 
 router = APIRouter()
+
+
+# ── Parques (dynamic survey locations) ────────────────────────────────────────────
+
+
+@router.get("/parques", response_model=list[ParqueOut])
+def list_parques(
+    apenas_ativos: bool = Query(default=False),
+    _: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return crud.list_parques(db, apenas_ativos=apenas_ativos)
+
+
+@router.post("/parques", response_model=ParqueOut, status_code=status.HTTP_201_CREATED)
+def create_parque(
+    data: ParqueCreate,
+    _: Usuario = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    return crud.create_parque(db, data)
+
+
+@router.patch("/parques/{parque_id}", response_model=ParqueOut)
+def update_parque(
+    parque_id: int,
+    data: ParqueUpdate,
+    _: Usuario = Depends(require_role("admin", "editor")),
+    db: Session = Depends(get_db),
+):
+    parque = crud.get_parque(db, parque_id)
+    if parque is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parque não encontrado.")
+    return crud.update_parque(db, parque, data)
 
 
 # ── Cidades (autocomplete IBGE) ──────────────────────────────────────────────────
