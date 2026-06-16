@@ -4,7 +4,7 @@ import pytest
 
 from app.core.security import hash_password
 from app.db.seed import DEMANDA_SCHEMA
-from app.models.demanda import FormularioVersao
+from app.models.demanda import FormularioVersao, Parque
 from app.models.usuario import Usuario
 
 CURRENT_YEAR = date.today().year
@@ -14,7 +14,18 @@ CURRENT_YEAR = date.today().year
 
 
 @pytest.fixture
-def formulario_ativo(db_session):
+def parques(db_session):
+    rows = [
+        Parque(slug="thermas", nome="Thermas dos Laranjais", ordem=1),
+        Parque(slug="rubio", nome="Rubio Termas", ordem=2),
+    ]
+    db_session.add_all(rows)
+    db_session.commit()
+    return rows
+
+
+@pytest.fixture
+def formulario_ativo(db_session, parques):
     fv = FormularioVersao(ano=CURRENT_YEAR, schema_json=DEMANDA_SCHEMA, status="ativo")
     db_session.add(fv)
     db_session.commit()
@@ -68,6 +79,63 @@ class TestCidadesAutocomplete:
         r = client.get("/api/v1/demanda/cidades", params={"q": "sao paulo"}, headers=_auth(token))
         assert r.status_code == 200
         assert any(c["nome"] == "São Paulo" for c in r.json())
+
+
+# ── parques (dynamic) ─────────────────────────────────────────────────────────────
+
+
+class TestParques:
+    def test_list_parques(self, client, db_session, parques):
+        _make_usuario(db_session, "pq@example.com", "gestor")
+        token = _login(client, "pq@example.com")
+        r = client.get("/api/v1/demanda/parques", headers=_auth(token))
+        assert r.status_code == 200
+        slugs = [p["slug"] for p in r.json()]
+        assert "thermas" in slugs and "rubio" in slugs
+
+    def test_editor_creates_parque_with_generated_slug(self, client, db_session):
+        _make_usuario(db_session, "pq2@example.com", "editor")
+        token = _login(client, "pq2@example.com")
+        r = client.post(
+            "/api/v1/demanda/parques",
+            json={"nome": "Parque Aquático Olímpia"},
+            headers=_auth(token),
+        )
+        assert r.status_code == 201
+        assert r.json()["slug"] == "parque_aquatico_olimpia"
+        assert r.json()["ativo"] is True
+
+    def test_gestor_cannot_create_parque(self, client, db_session):
+        _make_usuario(db_session, "pq3@example.com", "gestor")
+        token = _login(client, "pq3@example.com")
+        r = client.post("/api/v1/demanda/parques", json={"nome": "Novo"}, headers=_auth(token))
+        assert r.status_code == 403
+
+    def test_update_parque_rename_and_deactivate(self, client, db_session, parques):
+        _make_usuario(db_session, "pq4@example.com", "admin")
+        token = _login(client, "pq4@example.com")
+        pid = parques[0].id
+        r = client.patch(
+            f"/api/v1/demanda/parques/{pid}",
+            json={"nome": "Thermas (renomeado)", "ativo": False},
+            headers=_auth(token),
+        )
+        assert r.status_code == 200
+        assert r.json()["nome"] == "Thermas (renomeado)"
+        assert r.json()["ativo"] is False
+        assert r.json()["slug"] == "thermas"  # slug stays immutable
+
+    def test_apenas_ativos_filter(self, client, db_session, parques):
+        _make_usuario(db_session, "pq5@example.com", "admin")
+        token = _login(client, "pq5@example.com")
+        client.patch(
+            f"/api/v1/demanda/parques/{parques[1].id}",
+            json={"ativo": False},
+            headers=_auth(token),
+        )
+        r = client.get("/api/v1/demanda/parques", params={"apenas_ativos": True}, headers=_auth(token))
+        slugs = [p["slug"] for p in r.json()]
+        assert "rubio" not in slugs and "thermas" in slugs
 
 
 # ── formulário versão (US 2.5) ────────────────────────────────────────────────────
@@ -164,6 +232,16 @@ class TestRespostas:
         _make_usuario(db_session, "ps4@example.com", "pesquisador")
         token = _login(client, "ps4@example.com")
         r = client.post("/api/v1/demanda/respostas", json=_resposta_payload(), headers=_auth(token))
+        assert r.status_code == 400
+
+    def test_unknown_parque_rejected(self, client, db_session, formulario_ativo):
+        _make_usuario(db_session, "ps9@example.com", "pesquisador")
+        token = _login(client, "ps9@example.com")
+        r = client.post(
+            "/api/v1/demanda/respostas",
+            json=_resposta_payload(parque="parque_inexistente"),
+            headers=_auth(token),
+        )
         assert r.status_code == 400
 
 

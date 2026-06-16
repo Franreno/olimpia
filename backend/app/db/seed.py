@@ -3,9 +3,16 @@ from datetime import date
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.models.demanda import FormularioVersao
+from app.models.demanda import FormularioVersao, Parque
 from app.models.inventario import CategoriaEmpresa
 from app.models.usuario import Usuario
+
+# Initial parks — editable via the API/UI (admin can rename, add, or deactivate).
+# Slugs match pre-existing demand responses so historical data keeps resolving.
+PARQUES = [
+    ("thermas", "Thermas dos Laranjais", 1),
+    ("rubio", "Rubio Termas", 2),
+]
 
 CATEGORIAS = [
     ("meios_hospedagem", "Meios de Hospedagem"),
@@ -28,13 +35,9 @@ SEED_USERS = [
 # Schema do formulário de demanda — renderizado dinamicamente pelo frontend (US 5.5).
 DEMANDA_SCHEMA = {
     "campos": [
+        # parks are dynamic — options are sourced from the `parque` table, not hard-coded
         {"id": "parque", "label": "Local da pesquisa", "tipo": "selecao", "obrigatorio": True,
-         "opcoes": [
-             {"valor": "thermas", "rotulo": "Thermas dos Laranjais"},
-             {"valor": "rubio", "rotulo": "Rubio Termas"},
-             {"valor": "hot_beach", "rotulo": "Hot Beach"},
-             {"valor": "dolce_dulce", "rotulo": "Dolce Dulce"},
-         ]},
+         "fonte": "parques"},
         {"id": "cidade_residencia", "label": "Cidade de origem", "tipo": "autocomplete",
          "fonte": "ibge", "obrigatorio": True},
         {"id": "pernoites", "label": "Pernoites", "tipo": "numero", "min": 0, "max": 30, "obrigatorio": True},
@@ -64,6 +67,10 @@ def run_seed(db: Session) -> None:
     for slug, nome in CATEGORIAS:
         if not db.query(CategoriaEmpresa).filter_by(slug=slug).first():
             db.add(CategoriaEmpresa(slug=slug, nome=nome))
+
+    for slug, nome, ordem in PARQUES:
+        if not db.query(Parque).filter_by(slug=slug).first():
+            db.add(Parque(slug=slug, nome=nome, ordem=ordem))
 
     for email, perfil, password in SEED_USERS:
         if not db.query(Usuario).filter_by(email=email).first():

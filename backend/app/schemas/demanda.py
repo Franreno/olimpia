@@ -11,6 +11,30 @@ class CidadeOut(BaseModel):
     uf: str
 
 
+# ── Parque (dynamic survey locations) ─────────────────────────────────────────────
+
+
+class ParqueOut(BaseModel):
+    id: int
+    slug: str
+    nome: str
+    ativo: bool
+    ordem: int
+
+    model_config = {"from_attributes": True}
+
+
+class ParqueCreate(BaseModel):
+    nome: str
+    ordem: int = 0
+
+
+class ParqueUpdate(BaseModel):
+    nome: str | None = None
+    ativo: bool | None = None
+    ordem: int | None = None
+
+
 # ── Formulário versão ───────────────────────────────────────────────────────────
 
 

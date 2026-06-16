@@ -1,6 +1,7 @@
 import csv
 import io
 import re
+import unicodedata
 import uuid
 from collections import Counter
 from datetime import date, datetime
@@ -16,10 +17,16 @@ from app.models.demanda import (
     DemandaSatisfacao,
     DemandaViagem,
     FormularioVersao,
+    Parque,
     RespostaDemanda,
 )
 from app.models.usuario import Usuario
-from app.schemas.demanda import FormularioVersaoCreate, RespostaDemandaCreate
+from app.schemas.demanda import (
+    FormularioVersaoCreate,
+    ParqueCreate,
+    ParqueUpdate,
+    RespostaDemandaCreate,
+)
 
 # Monthly-income ceiling (R$) for each declared range — used by the coherence check.
 RENDA_MAX = {
@@ -31,6 +38,53 @@ RENDA_MAX = {
 }
 
 MESES_PT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+
+# ── Parque (dynamic survey locations) ─────────────────────────────────────────────
+
+
+def slugify(text: str) -> str:
+    base = "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn")
+    base = re.sub(r"[^a-zA-Z0-9]+", "_", base).strip("_").lower()
+    return base or "parque"
+
+
+def list_parques(db: Session, apenas_ativos: bool = False) -> list[Parque]:
+    query = db.query(Parque)
+    if apenas_ativos:
+        query = query.filter(Parque.ativo.is_(True))
+    return query.order_by(Parque.ordem, Parque.nome).all()
+
+
+def get_parque(db: Session, parque_id: int) -> Parque | None:
+    return db.get(Parque, parque_id)
+
+
+def create_parque(db: Session, data: ParqueCreate) -> Parque:
+    slug = slugify(data.nome)
+    # ensure unique slug (append a numeric suffix on collision)
+    base, n = slug, 2
+    while db.query(Parque).filter(Parque.slug == slug).first() is not None:
+        slug = f"{base}_{n}"
+        n += 1
+    parque = Parque(slug=slug, nome=data.nome.strip(), ordem=data.ordem)
+    db.add(parque)
+    db.commit()
+    db.refresh(parque)
+    return parque
+
+
+def update_parque(db: Session, parque: Parque, data: ParqueUpdate) -> Parque:
+    updates = data.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(parque, field, value)  # slug is immutable — not exposed in ParqueUpdate
+    db.commit()
+    db.refresh(parque)
+    return parque
+
+
+def active_parque_slugs(db: Session) -> set[str]:
+    return {slug for (slug,) in db.query(Parque.slug).filter(Parque.ativo.is_(True)).all()}
 
 
 # ── Formulário versão ───────────────────────────────────────────────────────────
@@ -134,6 +188,9 @@ def create_resposta(db: Session, data: RespostaDemandaCreate, pesquisador_id: uu
         fv = get_active_formulario(db)
     if fv is None:
         raise ValueError("Nenhum formulário de demanda ativo encontrado para o período.")
+
+    if data.parque not in active_parque_slugs(db):
+        raise ValueError("Parque inválido ou inativo.")
 
     regras = (fv.schema_json or {}).get("regras_coerencia", [])
     renda = data.perfil.renda_familiar if data.perfil else None
