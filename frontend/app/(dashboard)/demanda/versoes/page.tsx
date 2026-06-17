@@ -124,7 +124,12 @@ export default function FormVersionsPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <Button variant="ghost" size="sm" disabled>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={<Link href={`/demanda/versoes/${v.ano}`} />}
+                    nativeButton={false}
+                  >
                     <EyeIcon data-icon="inline-start" />
                     Ver formulário
                   </Button>
