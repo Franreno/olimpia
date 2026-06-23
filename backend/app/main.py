@@ -7,6 +7,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.demanda import router as demanda_router
 from app.api.v1.inventario import router as inventario_router
 from app.api.v1.ocupacao import router as ocupacao_router
+from app.api.v1.respondente import router as respondente_router
 from app.core.config import get_settings
 from app.core.logging import get_logger, setup_logging
 
@@ -47,6 +48,7 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(inventario_router, prefix="/api/v1", tags=["inventario"])
 app.include_router(demanda_router, prefix="/api/v1/demanda", tags=["demanda"])
 app.include_router(ocupacao_router, prefix="/api/v1/ocupacao", tags=["ocupacao"])
+app.include_router(respondente_router, prefix="/api/v1", tags=["respondentes"])
 
 
 @app.get("/health")

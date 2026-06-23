@@ -14,10 +14,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert } from "@/components/ui/alert";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  EmpresaFormFields,
+  serializeExtras,
+  extrasToForm,
+  categoryConfig,
+} from "@/components/empresa-form-fields";
 import { cn } from "@/lib/utils";
-
-const HOSPEDAGEM_SLUG = "meios_hospedagem";
-const HOSPEDAGEM_TIPOS = ["Hotel", "Resort", "Flat", "Pousada", "Outro"];
 
 const schema = z.object({
   nome_fantasia: z.string().min(1, "Nome é obrigatório"),
@@ -66,16 +69,14 @@ export default function EditarEstabelecimentoPage() {
 
   const [values, setValues] = useState<Partial<FormValues>>({});
   const [aceitaPesquisas, setAceitaPesquisas] = useState(true);
-  const [tipo, setTipo] = useState("");
-  const [uhs, setUhs] = useState("");
-  const [leitos, setLeitos] = useState("");
+  const [extras, setExtras] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const initialized = useRef(false);
+  const extrasInit = useRef(false);
 
   const categoria = categorias.find((c) => c.id === empresa?.categoria_id);
-  const isHospedagem = categoria?.slug === HOSPEDAGEM_SLUG;
 
   useEffect(() => {
     if (!empresa || initialized.current) return;
@@ -95,12 +96,16 @@ export default function EditarEstabelecimentoPage() {
       email_pesquisas: empresa.email_pesquisas ?? "",
     });
     setAceitaPesquisas(empresa.aceita_pesquisas);
-
-    const extras = (empresa.campos_extras ?? {}) as Record<string, unknown>;
-    setTipo(typeof extras.tipo === "string" ? extras.tipo : "");
-    setUhs(extras.uhs != null ? String(extras.uhs) : "");
-    setLeitos(extras.leitos != null ? String(extras.leitos) : "");
   }, [empresa]);
+
+  // Category extras depend on the category slug, which may resolve after `empresa`.
+  useEffect(() => {
+    if (!empresa || !categoria || extrasInit.current) return;
+    extrasInit.current = true;
+    setExtras(
+      extrasToForm(categoria.slug, empresa.campos_extras as Record<string, unknown>)
+    );
+  }, [empresa, categoria]);
 
   function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -125,15 +130,15 @@ export default function EditarEstabelecimentoPage() {
       return;
     }
 
+    // Preserve any unknown keys, drop this category's old fields (so cleared
+    // values are removed), then overlay the edited ones.
     const campos_extras: Record<string, unknown> = {
       ...(empresa?.campos_extras ?? {}),
     };
-    if (isHospedagem) {
-      if (tipo) campos_extras.tipo = tipo;
-      else delete campos_extras.tipo;
-      if (uhs !== "") campos_extras.uhs = parseInt(uhs);
-      if (leitos !== "") campos_extras.leitos = parseInt(leitos);
+    for (const f of categoryConfig(categoria?.slug)?.fields ?? []) {
+      delete campos_extras[f.key];
     }
+    Object.assign(campos_extras, serializeExtras(categoria?.slug, extras));
 
     try {
       await updateEmpresa.mutateAsync({
@@ -297,65 +302,15 @@ export default function EditarEstabelecimentoPage() {
               A categoria não pode ser alterada após o cadastro.
             </p>
           </FieldGroup>
-
-          {isHospedagem && (
-            <FieldGroup label="Tipo de meio de hospedagem">
-              <ToggleGroup
-                value={tipo ? [tipo] : []}
-                onValueChange={(v: string[]) => setTipo(v[0] ?? "")}
-                variant="outline"
-                className="flex flex-wrap"
-              >
-                {HOSPEDAGEM_TIPOS.map((t) => (
-                  <ToggleGroupItem key={t} value={t}>
-                    {t}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </FieldGroup>
-          )}
         </CardContent>
       </Card>
 
-      {/* Dados de Hospedagem (conditional) */}
-      {isHospedagem && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-              Dados de hospedagem
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <FieldGroup label="Unidades Habitacionais (UHs)" required>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={uhs}
-                  onChange={(e) => setUhs(e.target.value)}
-                />
-              </FieldGroup>
-              <FieldGroup label="Número de leitos" required>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={leitos}
-                  onChange={(e) => setLeitos(e.target.value)}
-                />
-              </FieldGroup>
-              <FieldGroup label="Peso calculado">
-                <Input
-                  disabled
-                  value="Calculado automaticamente"
-                  className="bg-muted text-muted-foreground"
-                />
-              </FieldGroup>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Category-specific fields (campos_extras) */}
+      <EmpresaFormFields
+        slug={categoria?.slug}
+        extras={extras}
+        onChange={(k, v) => setExtras((prev) => ({ ...prev, [k]: v }))}
+      />
 
       {/* Contato para pesquisas */}
       <Card>

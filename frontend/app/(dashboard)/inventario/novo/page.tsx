@@ -12,10 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { EmpresaFormFields, serializeExtras } from "@/components/empresa-form-fields";
 import { cn } from "@/lib/utils";
-
-const HOSPEDAGEM_SLUG = "meios_hospedagem";
-const HOSPEDAGEM_TIPOS = ["Hotel", "Resort", "Flat", "Pousada", "Outro"];
 
 const schema = z.object({
   categoria_id: z.number({ message: "Selecione uma categoria" }),
@@ -65,15 +63,12 @@ export default function NovoEstabelecimentoPage() {
   const [values, setValues] = useState<Partial<FormValues>>({
     campos_extras: {},
   });
-  const [tipo, setTipo] = useState<string>("");
-  const [uhs, setUhs] = useState("");
-  const [leitos, setLeitos] = useState("");
+  const [extras, setExtras] = useState<Record<string, string>>({});
   const [aceitaPesquisas, setAceitaPesquisas] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const selectedCat = categorias.find((c) => c.id === values.categoria_id);
-  const isHospedagem = selectedCat?.slug === HOSPEDAGEM_SLUG;
 
   function set<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -98,12 +93,7 @@ export default function NovoEstabelecimentoPage() {
       return;
     }
 
-    const campos_extras: Record<string, unknown> = {};
-    if (isHospedagem) {
-      if (tipo) campos_extras.tipo = tipo;
-      if (uhs) campos_extras.uhs = parseInt(uhs);
-      if (leitos) campos_extras.leitos = parseInt(leitos);
-    }
+    const campos_extras = serializeExtras(selectedCat?.slug, extras);
 
     try {
       const created = await createEmpresa.mutateAsync({
@@ -259,65 +249,15 @@ export default function NovoEstabelecimentoPage() {
               <p className="text-xs text-destructive">{errors.categoria_id}</p>
             )}
           </FieldGroup>
-
-          {isHospedagem && (
-            <FieldGroup label="Tipo de meio de hospedagem">
-              <ToggleGroup
-                value={tipo ? [tipo] : []}
-                onValueChange={(v: string[]) => setTipo(v[0] ?? "")}
-                variant="outline"
-                className="flex flex-wrap"
-              >
-                {HOSPEDAGEM_TIPOS.map((t) => (
-                  <ToggleGroupItem key={t} value={t}>
-                    {t}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </FieldGroup>
-          )}
         </CardContent>
       </Card>
 
-      {/* Dados de Hospedagem (conditional) */}
-      {isHospedagem && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-              Dados de hospedagem
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4">
-              <FieldGroup label="Unidades Habitacionais (UHs)" required>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={uhs}
-                  onChange={(e) => setUhs(e.target.value)}
-                />
-              </FieldGroup>
-              <FieldGroup label="Número de leitos" required>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={leitos}
-                  onChange={(e) => setLeitos(e.target.value)}
-                />
-              </FieldGroup>
-              <FieldGroup label="Peso calculado">
-                <Input
-                  disabled
-                  value="Calculado automaticamente"
-                  className="bg-muted text-muted-foreground"
-                />
-              </FieldGroup>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Category-specific fields (campos_extras) */}
+      <EmpresaFormFields
+        slug={selectedCat?.slug}
+        extras={extras}
+        onChange={(k, v) => setExtras((prev) => ({ ...prev, [k]: v }))}
+      />
 
       {/* Contato para pesquisas */}
       <Card>

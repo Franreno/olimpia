@@ -261,3 +261,31 @@ export interface RespostaOcupacaoCreate {
   leitos_informados?: number;
   observacao?: string;
 }
+
+// ── Controle de Respondentes (US 1.7) ─────────────────────────────────────────
+
+export interface RespondentePeriodoCol {
+  id: number;
+  descricao: string;
+  protocolo: string | null;
+}
+
+export interface RespondenteRow {
+  respondente_id: number;
+  empresa_id: string;
+  nome_fantasia: string;
+  contato: string | null;
+  protocolo: string | null;
+  observacao: string | null;
+  participacao: boolean[];
+  respondidos: number;
+  total_periodos: number;
+  taxa_participacao: number;
+}
+
+export interface RespondentesMatrix {
+  ano: number;
+  tipo_pesquisa: string;
+  periodos: RespondentePeriodoCol[];
+  respondentes: RespondenteRow[];
+}

@@ -19,6 +19,7 @@ import type {
   EstabelecimentoOcupacao,
   ResultadoOcupacao,
   RespostaOcupacaoCreate,
+  RespondentesMatrix,
 } from "./types";
 
 // ── Categorias ───────────────────────────────────────────────────────────────
@@ -304,4 +305,25 @@ export async function downloadOcupacaoExport(periodoId: number) {
   a.click();
   a.remove();
   window.URL.revokeObjectURL(url);
+}
+
+// ── Controle de Respondentes (US 1.7) ─────────────────────────────────────────
+
+export function useRespondentes(ano?: number) {
+  return useQuery<RespondentesMatrix>({
+    queryKey: ["respondentes", ano],
+    queryFn: () =>
+      api
+        .get("/api/v1/respondentes", { params: ano ? { ano } : {} })
+        .then((r) => r.data),
+  });
+}
+
+export function useSincronizarRespondentes() {
+  const qc = useQueryClient();
+  return useMutation<{ criados: number; total: number }, Error, void>({
+    mutationFn: () =>
+      api.post("/api/v1/respondentes/sincronizar").then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["respondentes"] }),
+  });
 }

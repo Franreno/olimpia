@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { PlusIcon, DownloadIcon, SearchIcon, EyeIcon, PencilIcon } from "lucide-react";
+import { PlusIcon, DownloadIcon, SearchIcon, EyeIcon, PencilIcon, UsersIcon } from "lucide-react";
 import { useEmpresas, useCategorias } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,15 @@ export default function InventarioPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Inventário Turístico</h1>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href="/inventario/respondentes" />}
+            nativeButton={false}
+          >
+            <UsersIcon data-icon="inline-start" />
+            Respondentes
+          </Button>
           <Button variant="outline" size="sm">
             <DownloadIcon data-icon="inline-start" />
             Exportar

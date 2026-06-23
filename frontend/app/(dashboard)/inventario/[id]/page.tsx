@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeftIcon, PencilIcon, TrashIcon, InfoIcon } from "lucide-react";
+import { ArrowLeftIcon, PencilIcon, TrashIcon } from "lucide-react";
 import { useEmpresa, useAuditLog, useSoftDeleteEmpresa, useCategorias } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { Alert } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
@@ -24,14 +23,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  EmpresaCategoryData,
+  categoryConfig,
+} from "@/components/empresa-form-fields";
 import type { AuditLog } from "@/lib/types";
 
-const TABS = [
-  { id: "info", label: "Informações" },
-  { id: "hospedagem", label: "Dados de Hospedagem" },
-  { id: "audit", label: "Histórico de alterações" },
-] as const;
-type TabId = (typeof TABS)[number]["id"];
+type TabId = "info" | "categoria" | "audit";
 
 function FieldRow({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -220,6 +218,13 @@ export default function EmpresaDetailPage() {
 
   const categoria = categorias.find((c) => c.id === empresa?.categoria_id);
   const extras = empresa?.campos_extras as Record<string, unknown> | undefined;
+  const catConfig = categoryConfig(categoria?.slug);
+
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "info", label: "Informações" },
+    ...(catConfig ? [{ id: "categoria" as const, label: catConfig.tabLabel }] : []),
+    { id: "audit", label: "Histórico de alterações" },
+  ];
 
   async function handleDelete() {
     await softDelete.mutateAsync(id);
@@ -346,7 +351,7 @@ export default function EmpresaDetailPage() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
         <TabsList variant="line">
-          {TABS.map((tab) => (
+          {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
               {tab.label}
             </TabsTrigger>
@@ -398,45 +403,8 @@ export default function EmpresaDetailPage() {
         </div>
       )}
 
-      {activeTab === "hospedagem" && (
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              {
-                label: "Unidades Habitacionais (UHs)",
-                key: "uhs",
-                sub: "Quartos / apartamentos",
-                color: "text-primary",
-              },
-              {
-                label: "Número de leitos",
-                key: "leitos",
-                sub: "Capacidade total de hóspedes",
-                color: "text-primary",
-              },
-              {
-                label: "Tipo de hospedagem",
-                key: "tipo",
-                sub: "hotel, resort, flat ou pousada",
-                color: "text-success",
-              },
-            ].map((s) => (
-              <Card key={s.key}>
-                <CardContent className="pt-5">
-                  <p className="text-xs text-muted-foreground mb-2 font-medium">
-                    {s.label}
-                  </p>
-                  <p className={`text-4xl font-bold leading-none ${s.color}`}>
-                    {extras ? String(extras[s.key] ?? "—") : "—"}
-                  </p>
-                  <p className="text-xs text-muted-foreground/60 mt-2">
-                    {s.sub}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+      {activeTab === "categoria" && (
+        <EmpresaCategoryData slug={categoria?.slug} campos={extras} />
       )}
 
       {activeTab === "audit" && (
