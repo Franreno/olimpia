@@ -1,7 +1,7 @@
 import redis
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
@@ -18,6 +18,9 @@ TEST_REDIS_DB = 15
 def db_engine():
     settings = get_settings()
     engine = create_engine(settings.test_database_url, future=True)
+    with engine.begin() as conn:
+        # required by accent-insensitive search (mirrors the unaccent migration)
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent"))
     Base.metadata.create_all(engine)
     yield engine
     Base.metadata.drop_all(engine)

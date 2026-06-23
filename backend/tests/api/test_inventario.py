@@ -125,6 +125,20 @@ class TestListEmpresas:
         assert r.status_code == 200
         assert any("Thermas" in e["nome_fantasia"] for e in r.json())
 
+    def test_filter_by_nome_is_accent_insensitive(self, client, db_session, categoria):
+        _make_usuario(db_session, "editor4b@example.com", "editor")
+        token = _login(client, "editor4b@example.com")
+        client.post(
+            "/api/v1/empresas",
+            json={"categoria_id": categoria.id, "nome_fantasia": "Turísmo Central", "campos_extras": {}},
+            headers=_auth(token),
+        )
+
+        # query without the accent must still match the accented name
+        r = client.get("/api/v1/empresas?q=turismo", headers=_auth(token))
+        assert r.status_code == 200
+        assert any("Turísmo" in e["nome_fantasia"] for e in r.json())
+
     def test_unauthenticated_cannot_list(self, client):
         r = client.get("/api/v1/empresas")
         assert r.status_code == 401

@@ -1,6 +1,7 @@
 import uuid
 from datetime import date, datetime
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.crud.audit import record_audit
@@ -25,7 +26,10 @@ def list_empresas(
     if status is not None:
         query = query.filter(Empresa.status == status)
     if q:
-        query = query.filter(Empresa.nome_fantasia.ilike(f"%{q}%"))
+        # Accent-insensitive: "turismo" matches "Turísmo" and vice-versa.
+        query = query.filter(
+            func.unaccent(Empresa.nome_fantasia).ilike(func.unaccent(f"%{q}%"))
+        )
     return query.order_by(Empresa.nome_fantasia).all()
 
 
