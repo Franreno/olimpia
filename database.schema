@@ -1,0 +1,207 @@
+// ══════════════════════════════════════════════════════
+// AUTENTICAÇÃO
+// ══════════════════════════════════════════════════════
+
+Table usuario {
+  id          uuid        [pk, default: `gen_random_uuid()`]
+  nome        varchar(120) [not null]
+  email       varchar(120) [unique, not null]
+  senha_hash  text        [not null]
+  perfil      varchar(20) [not null, note: "admin | editor | pesquisador | gestor"]
+  ativo       boolean     [default: true]
+  criado_em   timestamp   [default: `now()`]
+}
+
+// ══════════════════════════════════════════════════════
+// MÓDULO 1: INVENTÁRIO
+// ══════════════════════════════════════════════════════
+
+Table categoria_empresa {
+  id    serial      [pk]
+  slug  varchar(40) [unique, not null]
+  nome  varchar(80) [not null]
+}
+
+Table empresa {
+  id                  uuid        [pk, default: `gen_random_uuid()`]
+  categoria_id        int         [ref: > categoria_empresa.id, not null]
+  nome_fantasia       varchar(120) [not null]
+  razao_social        varchar(120)
+  cnpj                varchar(18)
+  endereco            varchar(200)
+  bairro              varchar(80)
+  telefone            varchar(20)
+  email               varchar(120)
+  status              varchar(10) [default: "ativo", note: "ativo | inativo"]
+  data_baixa          date
+  aceita_pesquisas    boolean     [default: true]
+  contato_pesquisas   varchar(120)
+  telefone_pesquisas  varchar(20)
+  email_pesquisas     varchar(120)
+  proprietario        varchar(200)
+  campos_extras       jsonb       [note: "campos por categoria: uhs, leitos, capacidade, etc."]
+  criado_em           timestamp   [default: `now()`]
+  atualizado_em       timestamp
+  criado_por          uuid        [ref: > usuario.id]
+}
+
+Table audit_log {
+  id              bigserial   [pk]
+  tabela          varchar(60) [not null]
+  registro_id     uuid        [not null]
+  usuario_id      uuid        [ref: > usuario.id]
+  operacao        varchar(10) [not null, note: "INSERT | UPDATE | DELETE"]
+  campo_alterado  varchar(80)
+  valor_anterior  jsonb
+  valor_novo      jsonb
+  criado_em       timestamp   [default: `now()`]
+}
+
+Table respondente_pesquisa {
+  id              serial      [pk]
+  empresa_id      uuid        [ref: > empresa.id, not null]
+  tipo_pesquisa   varchar(30) [not null, note: "taxa_ocupacao | demanda"]
+  protocolo       varchar(10) [note: "ex: 006/26"]
+  respondeu       boolean     [default: false]
+  data_resposta   timestamp
+  observacao      text
+}
+
+// ══════════════════════════════════════════════════════
+// MÓDULO 2: PESQUISA DE DEMANDA TURÍSTICA
+// ══════════════════════════════════════════════════════
+
+// Locais de pesquisa (dinâmicos) — geridos via API/UI. slug imutável, nome editável.
+Table parque {
+  id        serial      [pk]
+  slug      varchar(40) [unique, not null]
+  nome      varchar(100) [not null]
+  ativo     boolean     [default: true]
+  ordem     int         [default: 0]
+  criado_em timestamp   [default: `now()`]
+}
+
+Table formulario_versao {
+  id          serial  [pk]
+  ano         int     [unique, not null]
+  schema_json jsonb   [not null]
+  status      varchar(10) [default: "ativo", note: "ativo | travado"]
+  criado_em   timestamp   [default: `now()`]
+  criado_por  uuid    [ref: > usuario.id]
+}
+
+// Cabeçalho — quem coletou, quando e onde
+Table resposta_demanda {
+  id                    uuid    [pk, default: `gen_random_uuid()`]
+  formulario_versao_id  int     [ref: > formulario_versao.id, not null]
+  pesquisador_id        uuid    [ref: > usuario.id, not null]
+  parque                varchar(40) [not null, note: "Parque.slug — dinâmico; validado contra parques ativos na API (sem enum fixo)"]
+  coletado_em           timestamp   [not null]
+  sync_status           varchar(15) [default: "sincronizado", note: "pendente | sincronizado"]
+  alerta_coerencia      boolean [default: false]
+  descricao_alerta      text
+}
+
+// De onde veio e quanto tempo ficou
+Table demanda_estadia {
+  id                  serial  [pk]
+  resposta_id         uuid    [ref: - resposta_demanda.id, not null]
+  estado_residencia   varchar(50)
+  cidade_residencia   varchar(80)
+  data_chegada        date
+  data_partida        date
+  pernoites           int
+  meio_hospedagem     varchar(60)
+  acompanhantes_tipo  varchar(40)
+}
+
+// Como e por que veio, o que considerou antes
+Table demanda_viagem {
+  id                        serial  [pk]
+  resposta_id               uuid    [ref: - resposta_demanda.id, not null]
+  motivo_viagem             text[]
+  transporte_utilizado      varchar(60)
+  considerou_outro_destino  boolean
+  destinos_concorrentes     text[]
+}
+
+// NPS e satisfação geral com o destino
+Table demanda_satisfacao {
+  id                  serial    [pk]
+  resposta_id         uuid      [ref: - resposta_demanda.id, not null]
+  voltaria            boolean
+  indicaria           boolean
+  nps_recomendacao    smallint  [note: "0-10"]
+  nota_destino        smallint  [note: "0-10"]
+}
+
+// Perfil socioeconômico do turista
+Table demanda_perfil_socioeconomico {
+  id                  serial  [pk]
+  resposta_id         uuid    [ref: - resposta_demanda.id, not null]
+  genero              varchar(30)
+  faixa_etaria        varchar(20)
+  renda_familiar      varchar(40)
+  gasto_medio_diario  varchar(40)
+}
+
+// Notas por dimensão de serviço (hospedagem, alimentação, segurança, etc.)
+Table avaliacao_servico {
+  id          serial      [pk]
+  resposta_id uuid        [ref: > resposta_demanda.id, not null]
+  dimensao    varchar(40) [not null]
+  nota        smallint    [note: "1-5"]
+}
+
+// Notas por atrativo visitado (Thermas, museus, praças, etc.)
+Table avaliacao_atrativo {
+  id            serial      [pk]
+  resposta_id   uuid        [ref: > resposta_demanda.id, not null]
+  nome_atrativo varchar(120) [not null]
+  nota          smallint    [note: "1-5, null = não visitou"]
+}
+
+// ══════════════════════════════════════════════════════
+// MÓDULO 3: TAXA DE OCUPAÇÃO HOTELEIRA
+// ══════════════════════════════════════════════════════
+
+Table periodo_ocupacao {
+  id          serial      [pk]
+  tipo        varchar(15) [not null, note: "consolidado | expectativa"]
+  descricao   varchar(100) [not null]
+  data_inicio date        [not null]
+  data_fim    date        [not null]
+  status      varchar(15) [default: "aberto", note: "aberto | encerrado | publicado"]
+  protocolo   varchar(10)
+  criado_em   timestamp   [default: `now()`]
+  criado_por  uuid        [ref: > usuario.id]
+}
+
+Table resposta_ocupacao {
+  id                serial      [pk]
+  periodo_id        int         [ref: > periodo_ocupacao.id, not null]
+  empresa_id        uuid        [ref: > empresa.id, not null]
+  taxa_ocupacao     decimal(5,2)
+  uhs_informadas    int
+  leitos_informados int
+  diaria_media      decimal(8,2)
+  respondido_em     timestamp
+  respondido_por    uuid        [ref: > usuario.id]
+  observacao        text
+
+  indexes {
+    (periodo_id, empresa_id) [unique]
+  }
+}
+
+Table resultado_ocupacao {
+  id                        serial      [pk]
+  periodo_id                int         [ref: - periodo_ocupacao.id, unique, not null]
+  taxa_ponderada            decimal(5,2)
+  total_respondentes        int
+  total_leitos_respondidos  int
+  perc_leitos_respondidos   decimal(5,2)
+  diaria_media_ponderada    decimal(8,2)
+  receita_estimada          decimal(14,2)
+  calculado_em              timestamp   [default: `now()`]
+}
