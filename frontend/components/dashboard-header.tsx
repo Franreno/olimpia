@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BellIcon } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,11 +10,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuth } from "@/lib/auth";
 
 const SECTION_LABELS: Record<string, string> = {
   inventario: "Inventário Turístico",
@@ -26,30 +22,28 @@ const SECTION_LABELS: Record<string, string> = {
 const SUBSECTION_LABELS: Record<string, string> = {
   novo: "Novo estabelecimento",
   editar: "Editar",
+  respondentes: "Controle de Respondentes",
   coletas: "Coletas de campo",
+  resultados: "Resultados",
   versoes: "Versões do formulário",
   parques: "Parques",
   formulario: "Formulário de campo",
 };
 
-function initials(nome: string) {
-  return nome
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
-}
-
 export function DashboardHeader() {
   const pathname = usePathname();
-  const { user } = useAuth();
 
   const segments = pathname.split("/").filter(Boolean);
   const section = segments[0] ?? "";
-  const sub = segments[1];
   const sectionLabel = SECTION_LABELS[section];
-  const subLabel = sub ? (SUBSECTION_LABELS[sub] ?? "Detalhe") : null;
+  // Use the deepest recognised segment (e.g. ".../{id}/editar" → "Editar"),
+  // falling back to "Detalhe" only for a bare record id.
+  const knownSubs = segments
+    .slice(1)
+    .map((s) => SUBSECTION_LABELS[s])
+    .filter(Boolean);
+  const subLabel =
+    segments.length > 1 ? (knownSubs.at(-1) ?? "Detalhe") : null;
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-white px-4">
@@ -79,17 +73,6 @@ export function DashboardHeader() {
           )}
         </BreadcrumbList>
       </Breadcrumb>
-
-      <div className="flex items-center gap-1.5">
-        <Button variant="ghost" size="icon" aria-label="Notificações">
-          <BellIcon />
-        </Button>
-        <Avatar className="size-8">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-            {user ? initials(user.nome) : "?"}
-          </AvatarFallback>
-        </Avatar>
-      </div>
     </header>
   );
 }

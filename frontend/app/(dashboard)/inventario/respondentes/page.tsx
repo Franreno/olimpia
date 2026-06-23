@@ -134,18 +134,34 @@ export default function RespondentesPage() {
             onClick={() => data && exportCsv(data)}
           >
             <DownloadIcon data-icon="inline-start" />
-            Exportar
+            Exportar CSV
           </Button>
         </div>
       </div>
 
       {!isLoading && respondentes.length > 0 && (
-        <TableSearch
-          value={query}
-          onChange={setQuery}
-          placeholder="Buscar por nome, contato ou protocolo..."
-          className="max-w-sm"
-        />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+          <TableSearch
+            value={query}
+            onChange={setQuery}
+            placeholder="Buscar por nome, contato ou protocolo..."
+            className="w-full sm:w-72"
+          />
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-success/15 text-success">
+                <CheckIcon className="size-2.5" />
+              </span>
+              Respondeu
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-flex size-4 items-center justify-center rounded-full bg-muted text-muted-foreground/40">
+                <XIcon className="size-2.5" />
+              </span>
+              Não respondeu
+            </span>
+          </div>
+        </div>
       )}
 
       <Card>
@@ -201,24 +217,30 @@ export default function RespondentesPage() {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    {row.participacao.map((participou, j) => (
-                      <TableCell key={periodos[j]?.id ?? j} className="text-center">
-                        <span
-                          className={cn(
-                            "inline-flex size-5.5 items-center justify-center rounded-full",
-                            participou
-                              ? "bg-success/15 text-success"
-                              : "bg-muted text-muted-foreground/40"
-                          )}
-                        >
-                          {participou ? (
-                            <CheckIcon className="size-3" />
-                          ) : (
-                            <XIcon className="size-3" />
-                          )}
-                        </span>
-                      </TableCell>
-                    ))}
+                    {row.participacao.map((participou, j) => {
+                      const periodoNome = periodos[j]?.descricao ?? "período";
+                      const label = `${participou ? "Respondeu" : "Não respondeu"} — ${periodoNome}`;
+                      return (
+                        <TableCell key={periodos[j]?.id ?? j} className="text-center">
+                          <span
+                            title={label}
+                            aria-label={label}
+                            className={cn(
+                              "inline-flex size-5.5 items-center justify-center rounded-full",
+                              participou
+                                ? "bg-success/15 text-success"
+                                : "bg-muted text-muted-foreground/40"
+                            )}
+                          >
+                            {participou ? (
+                              <CheckIcon className="size-3" />
+                            ) : (
+                              <XIcon className="size-3" />
+                            )}
+                          </span>
+                        </TableCell>
+                      );
+                    })}
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="h-1 flex-1 rounded-full bg-muted">

@@ -85,10 +85,9 @@ export default function ColetasPage() {
             <div>
               <p className="text-base font-semibold">Nova pesquisa de campo</p>
               <p className="text-sm text-muted-foreground">
-                Formulário otimizado para tablet
                 {formulario
-                  ? ` · versão ${formulario.ano} · ${formulario.schema_json.campos?.length ?? 0} perguntas`
-                  : ""}
+                  ? `Versão ${formulario.ano} · ${formulario.schema_json.campos?.length ?? 0} perguntas`
+                  : "Registre uma nova coleta de demanda"}
               </p>
             </div>
           </div>
@@ -116,6 +115,14 @@ export default function ColetasPage() {
             </span>
           )}
         </div>
+        {!isLoading && recentes.length > 0 && (
+          <p className="mb-3 text-xs text-muted-foreground">
+            <span className="font-medium text-warning">Alerta</span> indica uma
+            inconsistência de coerência detectada na resposta (ex.: gasto
+            incompatível com a renda). <span className="font-medium text-success">OK</span>{" "}
+            indica resposta sem inconsistências.
+          </p>
+        )}
 
         {isLoading ? (
           <div className="flex flex-col gap-2">

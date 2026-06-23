@@ -17,7 +17,9 @@ import { cn } from "@/lib/utils";
 
 const schema = z.object({
   categoria_id: z.number({ message: "Selecione uma categoria" }),
-  nome_fantasia: z.string().min(1, "Nome é obrigatório"),
+  nome_fantasia: z
+    .string({ message: "Nome é obrigatório" })
+    .min(1, "Nome é obrigatório"),
   razao_social: z.string().optional(),
   cnpj: z.string().optional(),
   telefone: z.string().optional(),

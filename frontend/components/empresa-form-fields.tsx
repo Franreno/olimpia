@@ -53,7 +53,10 @@ export const CATEGORY_FIELDS: Record<string, CategoryFieldConfig> = {
       { key: "uhs", label: "Unidades Habitacionais (UHs)", kind: "number", required: true, sub: "Quartos / apartamentos" },
       { key: "leitos", label: "Número de leitos", kind: "number", required: true, sub: "Capacidade total de hóspedes" },
     ],
-    trailingNote: { label: "Peso calculado", value: "Calculado automaticamente" },
+    trailingNote: {
+      label: "Peso na taxa de ocupação",
+      value: "Derivado dos leitos ao salvar",
+    },
   },
   alimentacao: {
     sectionLabel: "Dados de alimentação",

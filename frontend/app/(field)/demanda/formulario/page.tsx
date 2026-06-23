@@ -16,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Empty,
   EmptyHeader,
   EmptyMedia,
@@ -72,9 +79,8 @@ export default function FieldFormPage() {
 
   const { data: citySuggestions = [] } = useCidades(cityQuery);
 
-  // derive the active park: explicit selection, else the first active park
-  const park = selectedPark ?? parques[0]?.slug ?? "";
-  const setPark = setSelectedPark;
+  // require an explicit park choice (no silent default that could skew data)
+  const park = selectedPark ?? "";
 
   const fator =
     formulario?.schema_json.regras_coerencia?.find(
@@ -85,8 +91,14 @@ export default function FieldFormPage() {
   const showCoherenceWarning =
     rendaMax !== undefined && gasto !== undefined && gasto > rendaMax * fator;
 
-  const canSubmit =
-    !!park && !!selectedCity && nights !== "" && spending !== "" && nps !== null;
+  const missingFields = [
+    !park && "parque",
+    !selectedCity && "cidade de origem",
+    nights === "" && "pernoites",
+    spending === "" && "gasto diário",
+    nps === null && "recomendação",
+  ].filter(Boolean) as string[];
+  const canSubmit = missingFields.length === 0;
 
   async function handleSubmit() {
     setError(null);
@@ -209,19 +221,26 @@ export default function FieldFormPage() {
               </EmptyHeader>
             </Empty>
           ) : (
-            <ToggleGroup
-              value={park ? [park] : []}
-              onValueChange={(v: string[]) => v[0] && setPark(v[0])}
-              variant="outline"
-              size="lg"
-              className="grid w-full grid-cols-2 gap-2.5"
+            <Select
+              value={park || null}
+              onValueChange={(v) => setSelectedPark(v ?? null)}
             >
-              {parques.map((p) => (
-                <ToggleGroupItem key={p.slug} value={p.slug} className="h-12">
-                  {p.nome}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+              <SelectTrigger className="h-11 w-full">
+                <SelectValue placeholder="Selecione o parque...">
+                  {(value) =>
+                    parques.find((p) => p.slug === value)?.nome ??
+                    "Selecione o parque..."
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {parques.map((p) => (
+                  <SelectItem key={p.slug} value={p.slug}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </Field>
 
@@ -335,7 +354,7 @@ export default function FieldFormPage() {
 
         {/* NPS — color-coded 0–10 rating scale (intentionally custom: 11 options,
             detractor/passive/promoter color semantics) */}
-        <Field label="NPS — Recomendação" required>
+        <Field label="Recomendação (0–10)" required>
           <p className="mb-3 text-sm text-muted-foreground">
             Em uma escala de 0 a 10, qual a probabilidade de você recomendar
             Olímpia como destino turístico?
@@ -380,6 +399,11 @@ export default function FieldFormPage() {
         >
           {createResposta.isPending ? "Registrando…" : "Registrar resposta"}
         </Button>
+        {!canSubmit && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Para registrar, preencha: {missingFields.join(", ")}.
+          </p>
+        )}
       </div>
     </div>
   );

@@ -63,7 +63,6 @@ function CampoCard({ campo, ordem }: { campo: CampoFormulario; ordem: number }) 
               <span className="rounded bg-accent px-1.5 py-0.5 font-medium text-accent-foreground">
                 {TIPO_LABEL[campo.tipo] ?? campo.tipo}
               </span>
-              <span className="font-mono">{campo.id}</span>
               {campo.tipo === "numero" &&
                 (campo.min != null || campo.max != null) && (
                   <span>

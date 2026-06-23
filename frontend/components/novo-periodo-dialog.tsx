@@ -89,7 +89,9 @@ export function NovoPeriodoDialog({
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="descricao">Nome do período</Label>
+            <Label htmlFor="descricao">
+              Nome do período <span className="text-danger">*</span>
+            </Label>
             <Input
               id="descricao"
               value={descricao}
@@ -129,7 +131,9 @@ export function NovoPeriodoDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="data-inicio">Data de início</Label>
+              <Label htmlFor="data-inicio">
+                Data de início <span className="text-danger">*</span>
+              </Label>
               <Input
                 id="data-inicio"
                 type="date"
@@ -138,7 +142,9 @@ export function NovoPeriodoDialog({
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="data-fim">Data de fim</Label>
+              <Label htmlFor="data-fim">
+                Data de fim <span className="text-danger">*</span>
+              </Label>
               <Input
                 id="data-fim"
                 type="date"
@@ -152,9 +158,9 @@ export function NovoPeriodoDialog({
             <div className="flex items-start gap-2 rounded-md bg-warning/10 p-3 text-warning">
               <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0" />
               <p className="text-xs leading-relaxed">
-                Períodos de <strong>Esperado</strong> não podem cair em sábado ou
-                domingo. Feriados prolongados em dias de semana devem ser
-                cadastrados manualmente.
+                Períodos do tipo <strong>Esperado</strong> não podem cair em
+                sábado ou domingo. Feriados prolongados em dias de semana devem
+                ser cadastrados manualmente.
               </p>
             </div>
           ) : (

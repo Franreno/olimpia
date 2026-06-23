@@ -14,6 +14,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -31,6 +32,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/auth";
 import { DEMANDA_NAV, demandaHomeForRole, type Perfil } from "@/lib/nav";
+import { cn } from "@/lib/utils";
 
 type NavModule = {
   href: string;
@@ -93,17 +95,19 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader>
-        <div className="flex items-center gap-2.5 px-1 py-1">
-          <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-[oklch(0.54_0.10_210)] flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground text-sm font-bold tracking-tight">
+      <SidebarHeader className="border-b border-sidebar-border">
+        <div className="flex items-center gap-2.5 px-1 py-1.5">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent-strong shadow-sm">
+            <span className="text-sm font-bold tracking-tight text-primary-foreground">
               OTO
             </span>
           </div>
-          <div>
-            <p className="text-sm font-semibold leading-tight">Observatório</p>
-            <p className="text-xs text-muted-foreground leading-tight">
-              Turismo Olímpia
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold leading-tight">
+              Observatório
+            </p>
+            <p className="truncate text-xs text-muted-foreground leading-tight">
+              Turismo de Olímpia
             </p>
           </div>
         </div>
@@ -111,8 +115,9 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {modules.map(({ href, label, icon: Icon }) => {
                 const sectionActive = pathname.startsWith(href);
                 const isDemanda = href === "/demanda";
@@ -123,18 +128,27 @@ export function AppSidebar() {
                   isDemanda && perfil
                     ? DEMANDA_NAV.filter((i) => i.roles.includes(perfil))
                     : [];
+                const hasSubs = subItems.length > 0;
+                // When a section expands its sub-items, the active sub-item is
+                // the single highlight — the parent becomes a subtle label so we
+                // don't stack two filled pills on top of each other.
+                const parentExpanded = sectionActive && hasSubs;
 
                 return (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton
                       render={<Link href={parentHref} />}
-                      isActive={sectionActive}
+                      isActive={sectionActive && !hasSubs}
                       tooltip={label}
+                      className={cn(
+                        parentExpanded &&
+                          "font-medium text-sidebar-accent-foreground hover:bg-transparent [&>svg]:text-sidebar-accent-foreground"
+                      )}
                     >
                       <Icon />
                       <span>{label}</span>
                     </SidebarMenuButton>
-                    {sectionActive && subItems.length > 0 && (
+                    {parentExpanded && (
                       <SidebarMenuSub>
                         {subItems.map((item) => (
                           <SidebarMenuSubItem key={item.href}>

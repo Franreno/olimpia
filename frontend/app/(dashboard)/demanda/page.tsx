@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import {
   ChartContainer,
@@ -50,6 +56,7 @@ export default function DemandaDashboardPage() {
   // derive the active park: explicit selection, else the first park
   const park = selectedPark ?? parques[0]?.slug ?? "";
   const setPark = setSelectedPark;
+  const parkNome = parques.find((p) => p.slug === park)?.nome ?? "";
 
   const { data, isLoading } = useIndicadores(park || undefined, ano);
 
@@ -70,15 +77,26 @@ export default function DemandaDashboardPage() {
             Nenhum parque cadastrado
           </span>
         ) : (
-          <Tabs value={park} onValueChange={(v) => setPark(v as string)}>
-            <TabsList>
-              {parques.map((p) => (
-                <TabsTrigger key={p.slug} value={p.slug}>
-                  {p.nome}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Parque:</span>
+            <Select value={park || null} onValueChange={(v) => setPark(v as string)}>
+              <SelectTrigger className="h-9 w-56">
+                <SelectValue placeholder="Selecione o parque...">
+                  {(value) =>
+                    parques.find((p) => p.slug === value)?.nome ??
+                    "Selecione o parque..."
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {parques.map((p) => (
+                  <SelectItem key={p.slug} value={p.slug}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
         <div className="flex gap-2">
           <Button
@@ -105,7 +123,7 @@ export default function DemandaDashboardPage() {
         <Card>
           <CardContent className="p-4">
             <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-              NPS Score
+              NPS
             </p>
             {isLoading ? (
               <Skeleton className="h-11 w-20" />
@@ -137,7 +155,7 @@ export default function DemandaDashboardPage() {
         </Card>
         <StatCard label="Média de pernoites" value={data?.media_pernoites != null ? data.media_pernoites.toLocaleString("pt-BR") : "—"} sub="noites por visita" loading={isLoading} />
         <StatCard label="Ticket médio" value={data?.ticket_medio != null ? `R$ ${data.ticket_medio.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : "—"} sub="gasto por viagem" loading={isLoading} />
-        <StatCard label="Respostas coletadas" value={String(data?.total_respostas ?? 0)} sub={String(ano)} loading={isLoading} />
+        <StatCard label="Respostas coletadas" value={String(data?.total_respostas ?? 0)} sub={parkNome ? `${parkNome} · ${ano}` : String(ano)} loading={isLoading} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

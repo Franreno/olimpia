@@ -96,7 +96,7 @@ function RespostaForm({
             <p className="font-medium">{estabelecimento.uhs ?? "—"}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Leitos (peso)</p>
+            <p className="text-xs text-muted-foreground">Leitos (% do total)</p>
             <p className="font-medium">
               {estabelecimento.leitos ?? "—"}{" "}
               <span className="text-xs text-muted-foreground">

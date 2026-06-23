@@ -49,8 +49,7 @@ export default function ParquesPage() {
       <div>
         <h1 className="text-xl font-bold">Parques / Locais de pesquisa</h1>
         <p className="text-sm text-muted-foreground">
-          Os locais de coleta são dinâmicos. Adicione, renomeie ou desative
-          parques.
+          Adicione, renomeie ou desative os locais de pesquisa.
         </p>
       </div>
 
@@ -131,9 +130,6 @@ function ParqueRow({
         ) : (
           <span className="font-medium">{parque.nome}</span>
         )}
-        <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-          {parque.slug}
-        </code>
         <Badge
           className={cn(
             "ml-auto border-transparent",

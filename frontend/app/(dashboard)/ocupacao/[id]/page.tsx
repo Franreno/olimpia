@@ -139,23 +139,23 @@ export default function OcupacaoDetailPage() {
                 : "—"}
             </p>
             <p className="mt-1.5 text-xs text-muted-foreground">
-              Atualiza em tempo real
+              Média ponderada pelos leitos
             </p>
           </CardContent>
         </Card>
         <StatCard
           label="Receita estimada"
           value={formatReceita(resultado?.receita_estimada ?? null)}
-          sub="Leitos × taxa × diária × diárias"
+          sub={
+            resultado?.qtd_diarias
+              ? `Base: ${resultado.qtd_diarias} ${resultado.qtd_diarias === 1 ? "diária" : "diárias"} no período`
+              : "Estimativa do período"
+          }
         />
         <StatCard
           label="Responderam"
           value={`${responderam} / ${estabelecimentos.length}`}
-          sub={
-            estabelecimentos.length > 0
-              ? `${Math.round((responderam / estabelecimentos.length) * 100)}% de participação`
-              : "—"
-          }
+          sub="Estabelecimentos que responderam"
         />
         <StatCard
           label="Leitos cadastrados"
@@ -168,9 +168,7 @@ export default function OcupacaoDetailPage() {
       <div className="flex items-start gap-2.5 rounded-lg bg-primary/5 p-3.5">
         <InfoIcon className="mt-0.5 size-3.5 shrink-0 text-primary" />
         <p className="text-sm leading-relaxed text-primary">
-          Os pesos são derivados automaticamente a partir do número de leitos
-          cadastrado no Módulo 1 — Inventário Turístico. A taxa ponderada recalcula
-          automaticamente à medida que novas respostas chegam.
+          O peso de cada estabelecimento vem do seu número de leitos no inventário.
         </p>
       </div>
 
@@ -192,7 +190,7 @@ export default function OcupacaoDetailPage() {
                 onClick={() => downloadOcupacaoExport(id)}
               >
                 <DownloadIcon data-icon="inline-start" />
-                Exportar
+                Exportar CSV
               </Button>
             </div>
           </div>
@@ -202,7 +200,7 @@ export default function OcupacaoDetailPage() {
                 <TableHead>Estabelecimento</TableHead>
                 <TableHead>UHs</TableHead>
                 <TableHead>Leitos</TableHead>
-                <TableHead>Peso</TableHead>
+                <TableHead>% dos leitos</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Taxa declarada</TableHead>
                 <TableHead>Receita est.</TableHead>
@@ -244,7 +242,7 @@ export default function OcupacaoDetailPage() {
                         <TableCell className="text-muted-foreground">
                           {e.leitos ?? "—"}
                         </TableCell>
-                        <TableCell className="font-medium text-accent">
+                        <TableCell className="font-medium text-accent-strong">
                           {e.peso.toFixed(2)}%
                         </TableCell>
                         <TableCell>
@@ -262,7 +260,7 @@ export default function OcupacaoDetailPage() {
                                     taxa >= 80
                                       ? "bg-success"
                                       : taxa >= 60
-                                        ? "bg-accent"
+                                        ? "bg-accent-strong"
                                         : "bg-warning"
                                   )}
                                   style={{ width: `${taxa}%` }}

@@ -32,7 +32,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
         <div
           className={cn(
             "h-full rounded-full transition-all",
-            pct === 100 ? "bg-success" : pct >= 60 ? "bg-accent" : "bg-warning"
+            pct === 100 ? "bg-success" : pct >= 60 ? "bg-accent-strong" : "bg-warning"
           )}
           style={{ width: `${pct}%` }}
         />

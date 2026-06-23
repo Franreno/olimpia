@@ -279,7 +279,7 @@ export default function EmpresaDetailPage() {
                   <AlertDialogTitle>Inativar estabelecimento?</AlertDialogTitle>
                   <AlertDialogDescription>
                     O estabelecimento será marcado como inativo. Esta ação é
-                    registrada no audit log e pode ser revertida.
+                    registrada no histórico de alterações e pode ser revertida.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

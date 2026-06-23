@@ -32,6 +32,27 @@ const CAT_SHORT: Record<string, string> = {
   servicos_apoio: "Apoio",
 };
 
+function exportEmpresasCsv(
+  empresas: { nome_fantasia: string; razao_social?: string; cnpj?: string; status: string; categoria_id: number; bairro?: string; telefone?: string; email?: string }[],
+  catNome: (id: number) => string
+) {
+  const header = ["nome_fantasia", "razao_social", "cnpj", "categoria", "status", "bairro", "telefone", "email"];
+  const lines = empresas.map((e) =>
+    [e.nome_fantasia, e.razao_social ?? "", e.cnpj ?? "", catNome(e.categoria_id), e.status, e.bairro ?? "", e.telefone ?? "", e.email ?? ""]
+      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+      .join(",")
+  );
+  const blob = new Blob(["﻿" + [header.join(","), ...lines].join("\n")], { type: "text/csv" });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `inventario_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export default function InventarioPage() {
   const [q, setQ] = useState("");
   const [catFilter, setCatFilter] = useState<number | undefined>();
@@ -69,9 +90,18 @@ export default function InventarioPage() {
             <UsersIcon data-icon="inline-start" />
             Respondentes
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={empresas.length === 0}
+            onClick={() =>
+              exportEmpresasCsv(empresas, (cid) =>
+                categorias.find((c) => c.id === cid)?.nome ?? ""
+              )
+            }
+          >
             <DownloadIcon data-icon="inline-start" />
-            Exportar
+            Exportar CSV
           </Button>
           <Button
             size="sm"
@@ -147,12 +177,6 @@ export default function InventarioPage() {
           )}
         </div>
 
-        {/* Count */}
-        {!isLoading && (
-          <p className="text-xs text-muted-foreground">
-            {empresas.length} estabelecimento{empresas.length !== 1 ? "s" : ""}
-          </p>
-        )}
       </div>
 
       <Card>
