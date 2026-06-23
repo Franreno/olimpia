@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.models.demanda import FormularioVersao, Parque
-from app.models.inventario import CategoriaEmpresa
+from app.models.inventario import CategoriaEmpresa, Empresa
 from app.models.usuario import Usuario
 
 # Initial parks — editable via the API/UI (admin can rename, add, or deactivate).
@@ -22,6 +22,19 @@ CATEGORIAS = [
     ("transporte", "Transporte"),
     ("eventos", "Eventos"),
     ("servicos_apoio", "Serviços de Apoio"),
+]
+
+# Sample lodging establishments so Module 3 (Taxa de Ocupação) is demonstrable out of the box.
+# (nome_fantasia, uhs, leitos, tipo, aceita_pesquisas)
+SEED_HOTEIS = [
+    ("Thermas Park Hotel", 220, 440, "resort", True),
+    ("Resort Água Viva", 185, 370, "resort", True),
+    ("Hotel Recanto das Águas", 98, 196, "hotel", True),
+    ("Hotel das Fontes", 120, 240, "hotel", True),
+    ("Grand Hotel Olímpia", 160, 320, "hotel", True),
+    ("Pousada Sol Nascente", 32, 64, "pousada", True),
+    ("Flat Centro", 45, 90, "flat", True),
+    ("Pousada Beira Rio", 18, 36, "pousada", False),  # never participates
 ]
 
 # (email, perfil, senha em texto puro — apenas para seed local/dev)
@@ -88,6 +101,22 @@ def run_seed(db: Session) -> None:
         db.add(FormularioVersao(ano=ano, schema_json=DEMANDA_SCHEMA, status="ativo"))
 
     db.commit()
+
+    # Lodging establishments (depend on the meios_hospedagem categoria being committed above).
+    cat_mh = db.query(CategoriaEmpresa).filter_by(slug="meios_hospedagem").first()
+    if cat_mh is not None:
+        for nome, uhs, leitos, tipo, aceita in SEED_HOTEIS:
+            if not db.query(Empresa).filter_by(nome_fantasia=nome).first():
+                db.add(
+                    Empresa(
+                        categoria_id=cat_mh.id,
+                        nome_fantasia=nome,
+                        status="ativo",
+                        aceita_pesquisas=aceita,
+                        campos_extras={"uhs": uhs, "leitos": leitos, "tipo": tipo},
+                    )
+                )
+        db.commit()
 
 
 def refresh_ibge() -> None:

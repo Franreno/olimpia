@@ -195,3 +195,69 @@ export interface Indicadores {
   destinos_concorrentes: DistribuicaoItem[];
   serie_nps: SerieNpsItem[];
 }
+
+// ── Módulo 3 — Taxa de Ocupação Hoteleira ─────────────────────────────────────
+
+export type PeriodoTipo = "consolidado" | "expectativa";
+export type PeriodoStatus = "aberto" | "encerrado" | "publicado";
+
+export interface PeriodoOcupacao {
+  id: number;
+  tipo: PeriodoTipo;
+  descricao: string;
+  data_inicio: string;
+  data_fim: string;
+  status: PeriodoStatus;
+  protocolo: string | null;
+  criado_em: string;
+  criado_por?: string | null;
+  total_respondentes: number;
+  total_estabelecimentos: number;
+  taxa_ponderada: number | null;
+  receita_estimada: number | null;
+}
+
+export interface PeriodoCreate {
+  tipo: PeriodoTipo;
+  descricao: string;
+  data_inicio: string;
+  data_fim: string;
+}
+
+export type EstabelecimentoStatus = "respondeu" | "pendente" | "nao_responde";
+
+export interface EstabelecimentoOcupacao {
+  empresa_id: string;
+  nome_fantasia: string;
+  uhs: number | null;
+  leitos: number | null;
+  peso: number;
+  status: EstabelecimentoStatus;
+  taxa_ocupacao: number | null;
+  diaria_media: number | null;
+  receita_estimada: number | null;
+  respondido_em: string | null;
+  observacao: string | null;
+}
+
+export interface ResultadoOcupacao {
+  periodo_id: number;
+  taxa_ponderada: number | null;
+  total_respondentes: number | null;
+  total_leitos_respondidos: number | null;
+  perc_leitos_respondidos: number | null;
+  diaria_media_ponderada: number | null;
+  receita_estimada: number | null;
+  total_leitos_inventario: number;
+  qtd_diarias: number;
+  calculado_em: string | null;
+}
+
+export interface RespostaOcupacaoCreate {
+  empresa_id: string;
+  taxa_ocupacao: number;
+  diaria_media?: number;
+  uhs_informadas?: number;
+  leitos_informados?: number;
+  observacao?: string;
+}

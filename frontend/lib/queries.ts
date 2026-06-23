@@ -14,6 +14,11 @@ import type {
   Parque,
   ParqueCreate,
   ParqueUpdate,
+  PeriodoOcupacao,
+  PeriodoCreate,
+  EstabelecimentoOcupacao,
+  ResultadoOcupacao,
+  RespostaOcupacaoCreate,
 } from "./types";
 
 // ── Categorias ───────────────────────────────────────────────────────────────
@@ -219,6 +224,82 @@ export async function downloadExport(
   a.href = url;
   const sufixo = parque ? `${parque}_${ano ?? ""}` : `${ano ?? ""}`;
   a.download = `demanda_${sufixo}.${formato}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+// ── Módulo 3 — Taxa de Ocupação ───────────────────────────────────────────────
+
+export function usePeriodos() {
+  return useQuery<PeriodoOcupacao[]>({
+    queryKey: ["periodos"],
+    queryFn: () => api.get("/api/v1/ocupacao/periodos").then((r) => r.data),
+  });
+}
+
+export function usePeriodo(id: number) {
+  return useQuery<PeriodoOcupacao>({
+    queryKey: ["periodos", id],
+    queryFn: () =>
+      api.get(`/api/v1/ocupacao/periodos/${id}`).then((r) => r.data),
+    enabled: Number.isFinite(id),
+  });
+}
+
+export function useResultadoOcupacao(id: number) {
+  return useQuery<ResultadoOcupacao>({
+    queryKey: ["ocupacao-resultado", id],
+    queryFn: () =>
+      api.get(`/api/v1/ocupacao/periodos/${id}/resultado`).then((r) => r.data),
+    enabled: Number.isFinite(id),
+  });
+}
+
+export function useEstabelecimentosOcupacao(id: number) {
+  return useQuery<EstabelecimentoOcupacao[]>({
+    queryKey: ["ocupacao-estabelecimentos", id],
+    queryFn: () =>
+      api
+        .get(`/api/v1/ocupacao/periodos/${id}/estabelecimentos`)
+        .then((r) => r.data),
+    enabled: Number.isFinite(id),
+  });
+}
+
+export function useCreatePeriodo() {
+  const qc = useQueryClient();
+  return useMutation<PeriodoOcupacao, Error, PeriodoCreate>({
+    mutationFn: (data) =>
+      api.post("/api/v1/ocupacao/periodos", data).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["periodos"] }),
+  });
+}
+
+export function useSubmitRespostaOcupacao(periodoId: number) {
+  const qc = useQueryClient();
+  return useMutation<unknown, Error, RespostaOcupacaoCreate>({
+    mutationFn: (data) =>
+      api
+        .post(`/api/v1/ocupacao/periodos/${periodoId}/respostas`, data)
+        .then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ocupacao-estabelecimentos", periodoId] });
+      qc.invalidateQueries({ queryKey: ["ocupacao-resultado", periodoId] });
+      qc.invalidateQueries({ queryKey: ["periodos"] });
+    },
+  });
+}
+
+export async function downloadOcupacaoExport(periodoId: number) {
+  const res = await api.get(`/api/v1/ocupacao/periodos/${periodoId}/export`, {
+    responseType: "blob",
+  });
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `ocupacao_periodo_${periodoId}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();

@@ -91,7 +91,22 @@ def update_empresa(db: Session, empresa: Empresa, data: EmpresaUpdate, usuario_i
     empresa.atualizado_em = datetime.utcnow()
     db.commit()
     db.refresh(empresa)
+
+    # US 1.6 / §8.5 — changing the bed count of a lodging establishment re-derives the
+    # weighted occupancy of every open period (synchronous, no Celery).
+    if "campos_extras" in updates:
+        _recalc_open_periods_if_hospedagem(db, empresa)
+
     return empresa
+
+
+def _recalc_open_periods_if_hospedagem(db: Session, empresa: Empresa) -> None:
+    categoria = db.get(CategoriaEmpresa, empresa.categoria_id)
+    if categoria is not None and categoria.slug == "meios_hospedagem":
+        # imported lazily to avoid a circular import (ocupacao crud imports inventario models)
+        from app.crud.ocupacao import recalcular_periodos_abertos
+
+        recalcular_periodos_abertos(db)
 
 
 def soft_delete_empresa(db: Session, empresa: Empresa, usuario_id: uuid.UUID) -> Empresa:
