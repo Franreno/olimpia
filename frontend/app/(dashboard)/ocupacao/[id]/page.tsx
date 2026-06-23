@@ -24,8 +24,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RegistrarRespostaDialog } from "@/components/registrar-resposta-dialog";
+import {
+  TablePagination,
+  TableSearch,
+  useTableData,
+} from "@/components/table-pagination";
 import type { EstabelecimentoOcupacao, EstabelecimentoStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 12;
 
 const STATUS_META: Record<
   EstabelecimentoStatus,
@@ -58,6 +65,20 @@ export default function OcupacaoDetailPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const responderam = estabelecimentos.filter((e) => e.status === "respondeu").length;
+
+  const {
+    query,
+    setQuery,
+    page: safePage,
+    setPage,
+    pageItems: pageEstab,
+    pageCount,
+    total,
+  } = useTableData({
+    data: estabelecimentos,
+    pageSize: PAGE_SIZE,
+    searchFields: (e) => [e.nome_fantasia],
+  });
 
   function abrirResposta(estab: EstabelecimentoOcupacao) {
     setSelecionado(estab);
@@ -156,16 +177,24 @@ export default function OcupacaoDetailPage() {
       {/* Establishments table */}
       <Card>
         <CardContent className="p-0">
-          <div className="flex items-center justify-between border-b p-3.5">
+          <div className="flex flex-col gap-3 border-b p-3.5 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm font-semibold">Estabelecimentos</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => downloadOcupacaoExport(id)}
-            >
-              <DownloadIcon data-icon="inline-start" />
-              Exportar
-            </Button>
+            <div className="flex items-center gap-2">
+              <TableSearch
+                value={query}
+                onChange={setQuery}
+                placeholder="Buscar estabelecimento..."
+                className="max-w-[220px]"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadOcupacaoExport(id)}
+              >
+                <DownloadIcon data-icon="inline-start" />
+                Exportar
+              </Button>
+            </div>
           </div>
           <Table>
             <TableHeader>
@@ -181,15 +210,27 @@ export default function OcupacaoDetailPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loadingEstab
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell colSpan={podeEditar ? 8 : 7}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                : estabelecimentos.map((e) => {
+              {loadingEstab ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={podeEditar ? 8 : 7}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : total === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={podeEditar ? 8 : 7}
+                    className="py-8 text-center text-sm text-muted-foreground"
+                  >
+                    {query
+                      ? "Nenhum estabelecimento corresponde à busca."
+                      : "Nenhum estabelecimento neste período."}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pageEstab.map((e) => {
                     const meta = STATUS_META[e.status];
                     const taxa = e.taxa_ocupacao != null ? Number(e.taxa_ocupacao) : null;
                     return (
@@ -254,9 +295,20 @@ export default function OcupacaoDetailPage() {
                         )}
                       </TableRow>
                     );
-                  })}
+                  })
+              )}
             </TableBody>
           </Table>
+          {!loadingEstab && (
+            <TablePagination
+              page={safePage}
+              pageCount={pageCount}
+              pageSize={PAGE_SIZE}
+              total={total}
+              onPageChange={setPage}
+              itemLabel="estabelecimentos"
+            />
+          )}
         </CardContent>
       </Card>
 

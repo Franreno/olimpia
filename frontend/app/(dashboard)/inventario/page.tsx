@@ -20,6 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
+import { TablePagination, DEFAULT_PAGE_SIZE } from "@/components/table-pagination";
 
 const CAT_SHORT: Record<string, string> = {
   meios_hospedagem: "Hospedagem",
@@ -35,6 +36,7 @@ export default function InventarioPage() {
   const [q, setQ] = useState("");
   const [catFilter, setCatFilter] = useState<number | undefined>();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [page, setPage] = useState(1);
 
   const { data: categorias = [] } = useCategorias();
   const { data: empresas = [], isLoading } = useEmpresas({
@@ -44,6 +46,14 @@ export default function InventarioPage() {
   });
 
   const hasFilters = catFilter !== undefined || statusFilter !== undefined;
+
+  // Client-side pagination (any filter/search change resets to page 1).
+  const pageCount = Math.max(1, Math.ceil(empresas.length / DEFAULT_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageEmpresas = empresas.slice(
+    (safePage - 1) * DEFAULT_PAGE_SIZE,
+    safePage * DEFAULT_PAGE_SIZE
+  );
 
   return (
     <>
@@ -82,7 +92,10 @@ export default function InventarioPage() {
             placeholder="Buscar estabelecimento..."
             className="pl-8"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
 
@@ -91,9 +104,10 @@ export default function InventarioPage() {
           <span className="text-xs text-muted-foreground">Categoria:</span>
           <ToggleGroup
             value={catFilter !== undefined ? [String(catFilter)] : []}
-            onValueChange={(v: string[]) =>
-              setCatFilter(v[0] ? Number(v[0]) : undefined)
-            }
+            onValueChange={(v: string[]) => {
+              setCatFilter(v[0] ? Number(v[0]) : undefined);
+              setPage(1);
+            }}
             variant="outline"
             size="sm"
             className="flex flex-wrap"
@@ -108,7 +122,10 @@ export default function InventarioPage() {
           <span className="text-xs text-muted-foreground">Status:</span>
           <ToggleGroup
             value={statusFilter ? [statusFilter] : []}
-            onValueChange={(v: string[]) => setStatusFilter(v[0])}
+            onValueChange={(v: string[]) => {
+              setStatusFilter(v[0]);
+              setPage(1);
+            }}
             variant="outline"
             size="sm"
           >
@@ -122,6 +139,7 @@ export default function InventarioPage() {
               onClick={() => {
                 setCatFilter(undefined);
                 setStatusFilter(undefined);
+                setPage(1);
               }}
             >
               Limpar filtros
@@ -168,7 +186,7 @@ export default function InventarioPage() {
                       <TableCell />
                     </TableRow>
                   ))
-                : empresas.map((emp) => (
+                : pageEmpresas.map((emp) => (
                     <TableRow
                       key={emp.id}
                       className="cursor-pointer hover:bg-muted/50"
@@ -255,6 +273,16 @@ export default function InventarioPage() {
               )}
             </TableBody>
           </Table>
+          {!isLoading && (
+            <TablePagination
+              page={safePage}
+              pageCount={pageCount}
+              pageSize={DEFAULT_PAGE_SIZE}
+              total={empresas.length}
+              onPageChange={setPage}
+              itemLabel="estabelecimentos"
+            />
+          )}
         </CardContent>
       </Card>
     </>

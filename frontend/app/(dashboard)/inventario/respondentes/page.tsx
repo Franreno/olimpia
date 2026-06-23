@@ -23,8 +23,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import {
+  TablePagination,
+  TableSearch,
+  useTableData,
+} from "@/components/table-pagination";
 import type { RespondentesMatrix } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 15;
 
 function rateColor(rate: number) {
   if (rate >= 70) return "bg-success";
@@ -73,6 +80,20 @@ export default function RespondentesPage() {
   const periodos = data?.periodos ?? [];
   const respondentes = data?.respondentes ?? [];
 
+  const {
+    query,
+    setQuery,
+    page,
+    setPage,
+    pageItems,
+    pageCount,
+    total,
+  } = useTableData({
+    data: respondentes,
+    pageSize: PAGE_SIZE,
+    searchFields: (r) => [r.nome_fantasia, r.contato, r.protocolo],
+  });
+
   return (
     <>
       <Button
@@ -118,6 +139,15 @@ export default function RespondentesPage() {
         </div>
       </div>
 
+      {!isLoading && respondentes.length > 0 && (
+        <TableSearch
+          value={query}
+          onChange={setQuery}
+          placeholder="Buscar por nome, contato ou protocolo..."
+          className="max-w-sm"
+        />
+      )}
+
       <Card>
         <CardContent className="p-0">
           <Table>
@@ -143,20 +173,22 @@ export default function RespondentesPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : respondentes.length === 0 ? (
+              ) : total === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4 + periodos.length}>
                     <Empty>
                       <EmptyHeader>
                         <EmptyTitle>
-                          Nenhum meio de hospedagem ativo no inventário
+                          {query
+                            ? "Nenhum respondente corresponde à busca"
+                            : "Nenhum meio de hospedagem ativo no inventário"}
                         </EmptyTitle>
                       </EmptyHeader>
                     </Empty>
                   </TableCell>
                 </TableRow>
               ) : (
-                respondentes.map((row) => (
+                pageItems.map((row) => (
                   <TableRow key={row.empresa_id}>
                     <TableCell className="font-medium">{row.nome_fantasia}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -205,6 +237,16 @@ export default function RespondentesPage() {
               )}
             </TableBody>
           </Table>
+          {!isLoading && (
+            <TablePagination
+              page={page}
+              pageCount={pageCount}
+              pageSize={PAGE_SIZE}
+              total={total}
+              onPageChange={setPage}
+              itemLabel="respondentes"
+            />
+          )}
         </CardContent>
       </Card>
 

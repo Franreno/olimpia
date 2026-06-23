@@ -19,7 +19,10 @@ import {
 } from "@/components/ui/table";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { NovoPeriodoDialog } from "@/components/novo-periodo-dialog";
+import { TablePagination } from "@/components/table-pagination";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 12;
 
 function ProgressBar({ done, total }: { done: number; total: number }) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -45,7 +48,12 @@ export default function OcupacaoPage() {
   const { data: periodos = [], isLoading } = usePeriodos();
   const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const podeEditar = user?.perfil === "admin" || user?.perfil === "editor";
+
+  const pageCount = Math.max(1, Math.ceil(periodos.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pagePeriodos = periodos.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <>
@@ -96,7 +104,7 @@ export default function OcupacaoPage() {
                       <TableCell />
                     </TableRow>
                   ))
-                : periodos.map((p) => (
+                : pagePeriodos.map((p) => (
                     <TableRow key={p.id} className="hover:bg-muted/50">
                       <TableCell>
                         <Link
@@ -164,6 +172,16 @@ export default function OcupacaoPage() {
               )}
             </TableBody>
           </Table>
+          {!isLoading && (
+            <TablePagination
+              page={safePage}
+              pageCount={pageCount}
+              pageSize={PAGE_SIZE}
+              total={periodos.length}
+              onPageChange={setPage}
+              itemLabel="períodos"
+            />
+          )}
         </CardContent>
       </Card>
 
