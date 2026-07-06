@@ -52,17 +52,7 @@ backend (FastAPI + Postgres) e frontend (Next.js) integrados.
 
 > Itens adiados por decisão de escopo do MVP: PWA/offline no formulário de campo,
 > export em PDF (aguardando template oficial do OTO), editor visual de schema de formulário
-> e comparação histórica de ocupação. Ver **Fora de escopo** acima e §10 do `CLAUDE.md`.
-
----
-
-## Demonstração
-
-O diretório [`demo/`](demo/) contém um vídeo de apresentação (~2m50s) percorrendo os três
-módulos no fluxo de uso real (cadastro → coleta → consolidação):
-
-- [`demo/oto-demo.mp4`](demo/oto-demo.mp4) / [`demo/oto-demo.webm`](demo/oto-demo.webm) — vídeo
-- [`demo/oto-showcase-script.md`](demo/oto-showcase-script.md) — roteiro narrado
+> e comparação histórica de ocupação (ver **Fora de escopo** acima).
 
 ![Dashboard de resultados da Pesquisa de Demanda](resultados.png)
 
@@ -114,7 +104,6 @@ módulos no fluxo de uso real (cadastro → coleta → consolidação):
 ├── database.schema            # schema completo em sintaxe dbdiagram.io
 ├── docker-compose.yml         # orquestra postgres, redis, backend e frontend
 ├── DESIGN/                    # protótipo HTML aprovado (fonte de verdade visual)
-├── demo/                      # vídeo de demonstração + roteiro
 ├── backend/                   # API FastAPI
 │   ├── app/
 │   │   ├── api/v1/            # routers (auth, inventario, respondente, demanda, ocupacao)
