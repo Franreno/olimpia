@@ -22,13 +22,49 @@ Diretor, portal externo do trade e integrações via API com fontes externas.
 
 ---
 
-## Status do projeto
+## Funcionalidades entregues
 
-- ✅ **Sprint 1** — fundação do backend: auth JWT + RBAC, CRUD de `empresa`/`categoria_empresa`, audit log append-only.
-- ✅ **Sprint 2** — frontend do Módulo 1 (Inventário): lista com busca/filtros, criação, edição, detalhe com abas (dados gerais, dados de hospedagem, histórico de alterações).
-- ⏭️ **Próximo** — painel de respondentes de pesquisa (1.7) e Módulo 2 (Pesquisa de Demanda Turística, Sprint 3).
+Os três módulos do MVP estão implementados e validados de ponta a ponta, com
+backend (FastAPI + Postgres) e frontend (Next.js) integrados.
 
-Checklist completo de user stories e status por item: [`user-stories-todo.md`](user-stories-todo.md).
+### M1 — Inventário Turístico
+- Cadastro de estabelecimentos por categoria, com **campos específicos por categoria**
+  (UHs/leitos para meios de hospedagem, capacidade para A&B, etc.) via `campos_extras` JSONB.
+- Busca e filtros por nome, categoria e status; paginação da tabela.
+- **Audit log append-only** — toda alteração registra autor, data e valores (antigo/novo).
+- Encerramento por inativação (`status='inativo'` + `data_baixa`) — empresas nunca são deletadas.
+- **Controle de respondentes** — matriz de estabelecimentos × períodos com protocolo e export CSV.
+- **Importação da base Excel** legada via CLI idempotente (`python -m app.db.import_inventario`).
+
+### M2 — Pesquisa de Demanda Turística
+- Formulário de campo otimizado para tablet, com **autocomplete de cidade** (5.571 municípios IBGE, busca acento-insensível).
+- **Alerta de coerência** gasto × renda, configurável via `schema_json`.
+- Parque obrigatório; formulário **versionado por ano** e travado durante o ano corrente.
+- Dashboard de resultados por parque: **NPS**, ticket médio, média de pernoites, mercados emissores e concorrentes, com gráficos.
+- Export para **Excel e CSV** (BOM UTF-8, compatível com Power BI).
+
+### M3 — Taxa de Ocupação Hoteleira
+- Criação de períodos **consolidado** ou **expectativa**, com protocolo automático (XXX/AA).
+- Herança ao vivo dos meios de hospedagem ativos do inventário.
+- **Taxa ponderada por leitos** e **receita estimada** recalculadas automaticamente (síncrono, mesma transação).
+- Bloqueio de expectativa em feriado de fim de semana.
+- Painel de respondentes (respondeu / pendente / não responde) e export CSV.
+
+> Itens adiados por decisão de escopo do MVP: PWA/offline no formulário de campo,
+> export em PDF (aguardando template oficial do OTO), editor visual de schema de formulário
+> e comparação histórica de ocupação. Ver **Fora de escopo** acima e §10 do `CLAUDE.md`.
+
+---
+
+## Demonstração
+
+O diretório [`demo/`](demo/) contém um vídeo de apresentação (~2m50s) percorrendo os três
+módulos no fluxo de uso real (cadastro → coleta → consolidação):
+
+- [`demo/oto-demo.mp4`](demo/oto-demo.mp4) / [`demo/oto-demo.webm`](demo/oto-demo.webm) — vídeo
+- [`demo/oto-showcase-script.md`](demo/oto-showcase-script.md) — roteiro narrado
+
+![Dashboard de resultados da Pesquisa de Demanda](resultados.png)
 
 ---
 
@@ -39,8 +75,9 @@ Checklist completo de user stories e status por item: [`user-stories-todo.md`](u
 - **SQLAlchemy 2.0** (modelos declarativos `Mapped`/`mapped_column`) + **Alembic** para migrations
 - **Pydantic v2** / **pydantic-settings** para schemas, validação e configuração
 - **python-jose** + **passlib/bcrypt** para autenticação JWT e hashing de senha
-- **Celery** + **Redis** para tarefas em background (recálculo da taxa ponderada) e refresh tokens
+- **Redis** para armazenamento/revogação de refresh tokens
 - **PostgreSQL 16** como banco principal
+- Recálculo da taxa ponderada é **síncrono** (mesma transação da resposta) neste MVP
 - **pytest** com testes contra um banco Postgres real (`oto_test`) — TDD red/green em todos os módulos
 
 ### Frontend
@@ -48,7 +85,8 @@ Checklist completo de user stories e status por item: [`user-stories-todo.md`](u
 - **Tailwind CSS v4** + **shadcn/ui**
 - **React Query (TanStack Query)** para data fetching/cache
 - **Zod** para validação de formulários
-- **PWA** com service worker para suporte offline no formulário de campo (Módulo 2)
+- Formulário de campo (Módulo 2) responsivo, otimizado para toque em tablet
+  _(suporte offline/PWA planejado para uma fase seguinte)_
 
 ### Infraestrutura
 - **Docker Compose** agnóstico de ambiente
@@ -75,18 +113,19 @@ Checklist completo de user stories e status por item: [`user-stories-todo.md`](u
 ├── Makefile                   # atalhos para infra, migrations, testes e dev servers
 ├── database.schema            # schema completo em sintaxe dbdiagram.io
 ├── docker-compose.yml         # orquestra postgres, redis, backend e frontend
-├── user-stories-todo.md       # checklist de user stories
+├── DESIGN/                    # protótipo HTML aprovado (fonte de verdade visual)
+├── demo/                      # vídeo de demonstração + roteiro
 ├── backend/                   # API FastAPI
 │   ├── app/
-│   │   ├── api/v1/            # routers (auth, inventario, demanda, ocupacao)
+│   │   ├── api/v1/            # routers (auth, inventario, respondente, demanda, ocupacao)
 │   │   ├── core/               # config, security (JWT/bcrypt), rbac, redis, logging
-│   │   ├── db/                  # Base declarativa, sessão, seed
-│   │   ├── models/               # modelos SQLAlchemy (espelham database.schema)
+│   │   ├── db/                  # Base declarativa, sessão, seed, import_inventario (CLI)
+│   │   ├── data/                 # dicionário IBGE de municípios (autocomplete)
+│   │   ├── models/                # modelos SQLAlchemy (espelham database.schema)
 │   │   ├── schemas/                # schemas Pydantic de request/response
-│   │   ├── crud/                    # funções de acesso ao banco
-│   │   ├── workers/                  # tarefas Celery (recálculo da taxa ponderada)
-│   │   ├── migrations/                # Alembic (env.py + versions/)
-│   │   └── main.py                     # app FastAPI, middlewares, registro de routers
+│   │   ├── crud/                    # funções de acesso ao banco (inclui recálculo síncrono da taxa)
+│   │   ├── migrations/               # Alembic (env.py + versions/)
+│   │   └── main.py                    # app FastAPI, middlewares, registro de routers
 │   ├── tests/                 # suíte pytest (espelha a estrutura de app/)
 │   ├── requirements.txt
 │   ├── Dockerfile
@@ -94,8 +133,11 @@ Checklist completo de user stories e status por item: [`user-stories-todo.md`](u
 └── frontend/                  # Next.js 16 + React 19 (App Router)
     ├── app/
     │   ├── login/               # tela de login
-    │   └── (dashboard)/          # layout autenticado (sidebar, header)
-    │       └── inventario/        # M1: lista, detalhe, novo, editar
+    │   ├── (field)/              # formulário de campo full-screen (M2, sem sidebar)
+    │   └── (dashboard)/           # layout autenticado (sidebar, header)
+    │       ├── inventario/         # M1: lista, detalhe, novo, editar, respondentes
+    │       ├── demanda/             # M2: dashboard, parques, versões, coletas
+    │       └── ocupacao/             # M3: lista de períodos, detalhe do período
     ├── components/              # componentes shadcn/ui + app-sidebar, auth-guard
     ├── lib/                      # api client, auth context, react-query hooks, types
     └── Dockerfile
