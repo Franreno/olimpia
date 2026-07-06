@@ -50,12 +50,6 @@ backend (FastAPI + Postgres) e frontend (Next.js) integrados.
 - Bloqueio de expectativa em feriado de fim de semana.
 - Painel de respondentes (respondeu / pendente / não responde) e export CSV.
 
-> Itens adiados por decisão de escopo do MVP: PWA/offline no formulário de campo,
-> export em PDF (aguardando template oficial do OTO), editor visual de schema de formulário
-> e comparação histórica de ocupação (ver **Fora de escopo** acima).
-
-![Dashboard de resultados da Pesquisa de Demanda](resultados.png)
-
 ---
 
 ## Stack tecnológica
